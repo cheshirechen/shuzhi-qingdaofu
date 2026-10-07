@@ -1,0 +1,96 @@
+[
+  {
+    "url": "/samples/demo-bottle.jpg",
+    "title": "塑料瓶",
+    "source": "plastic1024_jpg.rf.88933b6bb1bc184254cbd3c89bee28c5.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0",
+    "purpose": "Selected demonstration image; not representative accuracy evidence"
+  },
+  {
+    "url": "/samples/demo-cardboard.jpg",
+    "title": "纸板",
+    "source": "cardboard1000_jpg.rf.942798dbf4e34070c840230e83ce8f5f.jpg",
+    "dataset": "keremberke/garbage-object-detection valid",
+    "license": "CC BY 4.0",
+    "purpose": "Selected demonstration image; not representative accuracy evidence"
+  },
+  {
+    "url": "/samples/demo-bottle-small.jpg",
+    "title": "透明塑料瓶",
+    "source": "plastic1029_jpg.rf.08ce629a36fc4b3ad66d9e9e88a814d6.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0",
+    "purpose": "Selected demonstration image; not representative accuracy evidence"
+  },
+  {
+    "url": "/samples/public-test-01.jpg",
+    "title": "金属",
+    "source": "metal109_jpg.rf.f8784bd5ecf753527793e03cb946d58f.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "/samples/public-test-02.jpg",
+    "title": "金属",
+    "source": "metal134_jpg.rf.5786f1ae5a29d20516e82d61697c0421.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "/samples/public-test-03.jpg",
+    "title": "金属",
+    "source": "metal1017_jpg.rf.52c6bf2e21ee24727bd9c29fc7955f22.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "/samples/public-test-04.jpg",
+    "title": "纸板",
+    "source": "paper1086_jpg.rf.86bbf3fa2aaf0455d95128941bb05511.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "/samples/public-test-05.jpg",
+    "title": "金属",
+    "source": "metal1000_jpg.rf.f972491130c59d3bff7e97b22e8e2980.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "/samples/public-test-06.jpg",
+    "title": "金属",
+    "source": "metal1005_jpg.rf.d736ab336e8fa92ce57727666e624259.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "/samples/public-test-07.jpg",
+    "title": "纸张",
+    "source": "paper1008_jpg.rf.faef6fdbc29790622981282c2c3f9b9d.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "/samples/public-test-08.jpg",
+    "title": "纸张",
+    "source": "paper1010_jpg.rf.7bd2a337917707018059cab808a37869.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "/samples/public-test-09.jpg",
+    "title": "塑料",
+    "source": "metal1152_jpg.rf.6dbbce6bc281069f6039e7ae63e03b81.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0"
+  },
+  {
+    "url": "/samples/public-test-10.jpg",
+    "title": "纸张",
+    "source": "paper1083_jpg.rf.4bb79b10ea3255e6c730448738f72433.jpg",
+    "dataset": "keremberke/garbage-object-detection test",
+    "license": "CC BY 4.0"
+  }
+]

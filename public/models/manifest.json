@@ -1,0 +1,36 @@
+{
+  "model": "keremberke/yolov5n-garbage",
+  "revision": "257276b8c4ce530f48dff415e36761f9d1af4e69",
+  "classes": [
+    "biodegradable",
+    "cardboard",
+    "glass",
+    "metal",
+    "paper",
+    "plastic"
+  ],
+  "classesZh": [
+    "可降解垃圾",
+    "纸板",
+    "玻璃",
+    "金属",
+    "纸张",
+    "塑料"
+  ],
+  "format": "YOLOv5 decoded xywh,obj,classes",
+  "precision": "float32",
+  "models": [
+    {
+      "size": 416,
+      "url": "/models/garbage-416.onnx",
+      "bytes": 7281999,
+      "sha256": "0e621e5a20c60518963dcaeede74be30ee8c9dbdb05a6bceb4094dbe1375e384"
+    },
+    {
+      "size": 640,
+      "url": "/models/garbage-640.onnx",
+      "bytes": 7514856,
+      "sha256": "05374dc5db74311fc4047026af38e17ac176a8ddea460a9330868960e8614ed0"
+    }
+  ]
+}

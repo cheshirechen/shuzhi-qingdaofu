@@ -1,0 +1,10 @@
+node_modules/
+dist/
+artifacts/
+.venv/
+__pycache__/
+*.log
+.DS_Store
+GitHub-Pages-ready.zip
+public/runtime/
+public/samples/author-examples.jpg
