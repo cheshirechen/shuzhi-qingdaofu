@@ -64,8 +64,13 @@ export class DemoRelay {
 
       const db = app.database();
       this.cloudDocument = db.collection('demo_sessions').doc(this.session);
-      const initial = await this.cloudDocument.get();
-      const initialRoom = snapshotRoom(initial);
+      let initialRoom = null;
+      try {
+        const initial = await this.cloudDocument.get();
+        initialRoom = snapshotRoom(initial);
+      } catch (error) {
+        if (error?.code !== 'DOCUMENT_NOT_FOUND') throw error;
+      }
       if (initialRoom) this.accept(initialRoom);
       else await this.cloudDocument.set(this.state);
 
