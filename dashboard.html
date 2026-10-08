@@ -157,7 +157,6 @@
                 <span class="text-cyan-400 text-sm font-tech ml-4 cursor-pointer hover:text-white" onclick="openModal('sat-detail-modal')">BD-RTK SATS: 24 🛰️</span>
             </div>
 
-            <span id="sync-status" class="absolute left-6 bottom-1 z-20 text-[10px] text-yellow-300 border border-yellow-700/60 bg-yellow-900/20 px-2 py-0.5 rounded font-tech">云端连接中</span>
             
             <h1 class="text-2xl whitespace-nowrap font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 glow-text z-10 tracking-widest cursor-pointer drop-shadow-lg" onclick="openModal('report-modal')">
                 基于北斗与大模型的空地协同智慧巡检系统
@@ -813,9 +812,9 @@
 
         // 三个演示模式各自保留独立的初始视野；roam 保持滚轮缩放与拖动能力。
         const mapViewPresets = {
-            sense: { center: [116.52, 39.92], zoom: 1.08 },
-            heat: { center: [116.52, 39.92], zoom: 1.52 },
-            dispatch: { center: [116.49, 39.89], zoom: 1.62 }
+            sense: { center: [116.52, 39.92], zoom: 2.16 },
+            heat: { center: [116.52, 39.92], zoom: 3.04 },
+            dispatch: { center: [116.49, 39.89], zoom: 3.24 }
         };
 
         const geoConfig = mode => ({
@@ -1209,14 +1208,6 @@
             const text = '【事件解析】识别为道路纸类与塑料抛洒物，置信度 96%。\n【北斗校核】事件锚定北京工业大学平乐园校区，定位精度 1.6 m。\n【环境评估】当前无降水，周边道路交通状态正常。\n【风险研判】事件等级：轻度，无需临时交通管制。\n【资源匹配】推荐执行：环卫人员03，距离事件点 1.2 km。\n【路线规划】北工大西门 → 平乐园路 → 事件点。\n【调度结论】方案已生成，准备下发现场作业端。';
             await typeWriter(text, reply, 22);
         }
-
-        window.qingdaofuSetConnection = function(mode, connected) {
-            const status = document.getElementById('sync-status');
-            status.innerText = mode === 'cloudbase' && connected ? '三端云端联动' : '云端环境待配置';
-            status.className = mode === 'cloudbase' && connected
-                ? 'absolute left-6 bottom-1 z-20 text-[10px] text-neon-green border border-green-700/60 bg-green-900/20 px-2 py-0.5 rounded font-tech'
-                : 'absolute left-6 bottom-1 z-20 text-[10px] text-yellow-300 border border-yellow-700/60 bg-yellow-900/20 px-2 py-0.5 rounded font-tech';
-        };
 
         window.qingdaofuApplyState = function(room) {
             demoStage = room.stage || 'idle';

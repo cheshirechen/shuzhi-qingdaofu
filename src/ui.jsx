@@ -40,13 +40,6 @@ export function useRelay(session) {
   return [room, update];
 }
 
-export function ConnectionPill({ room, compact = false }) {
-  const cloud = room.relay?.mode === 'cloudbase';
-  return <span className={`connection-pill ${room.relay?.connected ? 'online' : ''} ${compact ? 'compact' : ''}`} title={room.relay?.warning || ''}>
-    <span className="pulse-dot"/><Icon name="cloud"/>{cloud ? '云端联机' : '通道待配置'}
-  </span>;
-}
-
 export function roleUrl(view, session) {
   const url = new URL(BASE_PATH, window.location.origin);
   url.searchParams.set('view', view);
@@ -60,6 +53,6 @@ export function QrCard({ label, hint, url, accent }) {
   return <div className="qr-card"><div className="qr-code" style={{ '--accent': accent }}>{src ? <img src={src} alt={`${label}二维码`}/> : <span>生成中</span>}</div><div><strong>{label}</strong><small>{hint}</small><a href={url} target="_blank" rel="noreferrer">在当前设备打开 ↗</a></div></div>;
 }
 
-export function MobileHeader({ title, subtitle, room }) {
-  return <header className="mobile-header"><span className="mobile-logo"><Icon name="scan"/></span><div><h1>{title}</h1><p>{subtitle}</p></div><ConnectionPill room={room} compact/></header>;
+export function MobileHeader({ title, subtitle }) {
+  return <header className="mobile-header"><span className="mobile-logo"><Icon name="scan"/></span><div><h1>{title}</h1><p>{subtitle}</p></div></header>;
 }

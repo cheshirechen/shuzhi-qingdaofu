@@ -56,54 +56,65 @@ const fs = require('node:fs');
     await dashboard.waitForFunction(() => typeof window.qingdaofuApplyState === 'function', null, { timeout: 30000 });
     if (expectCloud) {
       await dashboard.waitForFunction(
-        () => document.body.innerText.includes('三端云端联动'),
+        () => window.__QINGDAOFU_RELAY__?.mode === 'cloudbase' && window.__QINGDAOFU_RELAY__?.connected,
         null,
         { timeout: 30000 },
       );
-      await dashboard.keyboard.press('r');
-      await dashboard.waitForFunction(
-        () => document.querySelector('#event-detail-modal')?.classList.contains('translate-x-full'),
-        null,
-        { timeout: 20000 },
-      );
     }
+    await dashboard.keyboard.press('r');
+    await dashboard.waitForFunction(
+      () => document.querySelector('#event-detail-modal')?.classList.contains('translate-x-full'),
+      null,
+      { timeout: 20000 },
+    );
     await dashboard.waitForSelector('#main-echarts-map canvas', { timeout: 30000 });
     assert.equal(await dashboard.locator('#snap-img').count(), 0, 'dashboard must not contain a photo block');
+    assert.doesNotMatch(
+      await dashboard.locator('body').innerText(),
+      /三端云端联动|云端环境待配置/,
+      'dashboard must not expose cloud relay wording',
+    );
 
     const senseView = await readMapView(dashboard);
-    assert.equal(senseView.zoom, 1.08, 'sense map must use its medium initial view');
+    assert.equal(senseView.zoom, 2.16, 'sense map must use its enlarged initial view');
     assert.equal(senseView.roam, true, 'sense map must remain zoomable and draggable');
     await dashboard.locator('#tab-heat').click();
-    await waitForMapZoom(dashboard, 1.52);
+    await waitForMapZoom(dashboard, 3.04);
     const heatView = await readMapView(dashboard);
-    assert.equal(heatView.zoom, 1.52, 'heat map must use its closer initial view');
+    assert.equal(heatView.zoom, 3.04, 'heat map must use its enlarged initial view');
     assert.equal(heatView.roam, true, 'heat map must remain zoomable and draggable');
     await dashboard.locator('#tab-dispatch').click();
-    await waitForMapZoom(dashboard, 1.62);
+    await waitForMapZoom(dashboard, 3.24);
     const dispatchView = await readMapView(dashboard);
-    assert.equal(dispatchView.zoom, 1.62, 'dispatch map must focus on the BJUT area');
+    assert.equal(dispatchView.zoom, 3.24, 'dispatch map must focus more closely on the BJUT area');
     assert.equal(dispatchView.roam, true, 'dispatch map must remain zoomable and draggable');
     await dashboard.locator('#tab-sense').click();
-    await waitForMapZoom(dashboard, 1.08);
+    await waitForMapZoom(dashboard, 2.16);
 
     await detector.setViewportSize({ width: 390, height: 844 });
     await detector.goto(`${base}detector.html?session=ICAN2026`, { waitUntil: 'domcontentloaded' });
     await settleOfflineShell(detector);
     if (expectCloud) {
-      await detector.waitForFunction(() => document.body.innerText.includes('云端联动'), null, { timeout: 30000 });
+      await detector.waitForFunction(() => window.__QINGDAOFU_RELAY__?.mode === 'cloudbase' && window.__QINGDAOFU_RELAY__?.connected, null, { timeout: 30000 });
     }
     await detector.getByRole('button', { name: '开启相机', exact: true }).waitFor({ state: 'visible' });
     await detector.waitForFunction(() => [...document.querySelectorAll('button')].some(button => button.textContent === '开启相机' && !button.disabled), null, { timeout: 180000 });
     assert.match(await detector.locator('header').innerText(), /手机垃圾识别/);
+    assert.doesNotMatch(await detector.locator('body').innerText(), /云端联动/, 'detector must not expose cloud relay wording');
 
     await worker.setViewportSize({ width: 390, height: 844 });
     await worker.goto(`${base}?view=worker&session=ICAN2026`, { waitUntil: 'domcontentloaded' });
     await settleOfflineShell(worker);
     if (expectCloud) {
-      await worker.waitForFunction(() => document.body.innerText.includes('云端联机'), null, { timeout: 30000 });
+      await worker.waitForFunction(() => window.__QINGDAOFU_RELAY__?.mode === 'cloudbase' && window.__QINGDAOFU_RELAY__?.connected, null, { timeout: 30000 });
     }
     await worker.getByRole('button', { name: '进入待命' }).click();
     await worker.getByText('正在等待新任务').waitFor();
+    assert.doesNotMatch(
+      await worker.locator('body').innerText(),
+      /云端联机|通道待配置/,
+      'worker must not expose cloud relay wording',
+    );
 
     await dashboard.keyboard.press('d');
     await dashboard.waitForFunction(() => !document.querySelector('#event-detail-modal').classList.contains('translate-x-full'));
@@ -112,6 +123,7 @@ const fs = require('node:fs');
     assert.equal(await dashboard.locator('#event-detail-modal img').count(), 0, 'event drawer must not render an image');
 
     await worker.getByText('新任务').waitFor({ timeout: 20000 });
+    assert.equal(await worker.locator('.task-card img').count(), 0, 'worker task card must not render an image');
     await worker.getByRole('button', { name: '接单' }).click();
     await dashboard.waitForFunction(() => document.querySelector('#detail-status')?.textContent.includes('处理中'));
     await worker.getByRole('button', { name: '完成' }).click();
@@ -124,7 +136,7 @@ const fs = require('node:fs');
     assert.deepEqual(errors, []);
     await dashboard.keyboard.press('r');
     await worker.getByText('正在等待新任务').waitFor({ timeout: 20000 });
-    console.log(JSON.stringify({ passed: true, checks: [expectCloud ? 'three-isolated-cloud-clients' : 'browser-local-relay', 'three-map-presets', 'all-maps-remain-interactive', 'chaoyang-map-rendered', 'drawer-has-no-photo', 'detector-ready', 'dispatch-received', 'accepted', 'completed'] }, null, 2));
+    console.log(JSON.stringify({ passed: true, checks: [expectCloud ? 'three-isolated-cloud-clients' : 'browser-local-relay', 'cloud-status-hidden', 'three-map-presets', 'all-maps-remain-interactive', 'chaoyang-map-rendered', 'drawer-has-no-photo', 'worker-card-has-no-photo', 'detector-ready', 'dispatch-received', 'accepted', 'completed'] }, null, 2));
   } catch (error) {
     console.error(error.stack);
     if (errors.length) console.error(errors.join('\n'));

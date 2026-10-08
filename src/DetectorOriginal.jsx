@@ -47,12 +47,11 @@ function App() {
   const [photoSource,setPhotoSource] = useState(''), [dimensions,setDimensions] = useState({width:4,height:3});
   const [processing,setProcessing] = useState(false), [offline,setOffline] = useState(!navigator.onLine), [cacheStatus,setCacheStatus] = useState('');
   const [deviceInfo,setDeviceInfo] = useState(''), [sampleList,setSampleList] = useState([]);
-  const [relayMode,setRelayMode] = useState('正在连接'), [sent,setSent] = useState(false);
+  const [sent,setSent] = useState(false);
 
   useEffect(() => {
     const relay = new DemoRelay(session, next => {
       roomRef.current = next;
-      setRelayMode(next.relay?.mode === 'cloudbase' ? '云端联动' : next.relay?.connected ? '待联机' : '连接中');
       if (next.stage === 'idle') {
         sentRef.current = false;
         streakRef.current = 0;
@@ -234,7 +233,7 @@ function App() {
   },[]);
 
   return <div className="app">
-    <header><div className="brand-icon"><Icon name="scan"/></div><div><h1>数智清道夫</h1><p>手机垃圾识别</p></div><span className="privacy"><Icon name="shield"/>本机识别 · {relayMode}</span></header>
+    <header><div className="brand-icon"><Icon name="scan"/></div><div><h1>数智清道夫</h1><p>手机垃圾识别</p></div><span className="privacy"><Icon name="shield"/>本机识别</span></header>
     <main>
       <section className="viewer-panel" aria-label="识别画面">
         <div className="viewer-top"><span><i className={mode==='camera'?'live':''}/>{mode==='camera'?'实时相机':mode==='photo'?'照片识别':'取景画面'}</span><span>{offline?'离线':'本机处理'} · {size} 输入</span></div>

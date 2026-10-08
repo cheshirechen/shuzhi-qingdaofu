@@ -120,10 +120,10 @@ export class DemoRelay {
   }
 
   emit(meta = {}) {
-    if (!this.stopped) this.onState({
-      ...this.state,
-      relay: { mode: this.mode, connected: this.connected, ...meta },
-    });
+    if (this.stopped) return;
+    const relay = { mode: this.mode, connected: this.connected, ...meta };
+    window.__QINGDAOFU_RELAY__ = relay;
+    this.onState({ ...this.state, relay });
   }
 
   accept(next) {
