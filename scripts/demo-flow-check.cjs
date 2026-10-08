@@ -21,7 +21,19 @@ const fs = require('node:fs');
 
   try {
     await dashboard.goto(`${base}dashboard.html?session=ICAN2026`, { waitUntil: 'domcontentloaded' });
+    await dashboard.evaluate(async () => {
+      if ('serviceWorker' in navigator) await navigator.serviceWorker.ready;
+    });
+    await dashboard.waitForFunction(() => !('serviceWorker' in navigator) || Boolean(navigator.serviceWorker.controller));
+    await dashboard.reload({ waitUntil: 'domcontentloaded' });
     await dashboard.waitForFunction(() => typeof window.qingdaofuApplyState === 'function', null, { timeout: 30000 });
+    if (process.env.EXPECT_CLOUD === '1') {
+      await dashboard.waitForFunction(
+        () => document.body.innerText.includes('云端联机'),
+        null,
+        { timeout: 30000 },
+      );
+    }
     await dashboard.waitForSelector('#main-echarts-map canvas', { timeout: 30000 });
     assert.equal(await dashboard.locator('#snap-img').count(), 0, 'dashboard must not contain a photo block');
 

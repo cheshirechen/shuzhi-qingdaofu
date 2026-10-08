@@ -1,6 +1,19 @@
 import cloudbase from '@cloudbase/js-sdk';
 import { freshRoom } from './demoData.js';
 
+// 三个端口都主动检查离线外壳更新，避免发布新版后仍被旧缓存控制。
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  let reloadingForUpdate = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloadingForUpdate) return;
+    reloadingForUpdate = true;
+    window.location.reload();
+  });
+  navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(error => {
+    console.warn('Offline shell registration failed.', error);
+  });
+}
+
 const cloudConfig = () => window.__QINGDAOFU_REALTIME__ || {};
 const roomKey = session => `qingdaofu-room-${session}`;
 
