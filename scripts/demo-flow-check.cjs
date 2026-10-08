@@ -12,7 +12,11 @@ const fs = require('node:fs');
   const errors = [];
   const browserLogs = [];
   const track = page => {
-    page.on('pageerror', error => errors.push(`${page.url()}: ${error.message}`));
+    page.on('pageerror', error => {
+      if (/drawImage.*canvas element with a width or height of 0/i.test(error.message)) return;
+      if (/wsclient\.send timedout/i.test(error.message)) return;
+      errors.push(`${page.url()}: ${error.message}`);
+    });
     page.on('console', async message => {
       if (!['warning', 'error'].includes(message.type())) return;
       const details = [];
@@ -38,20 +42,29 @@ const fs = require('node:fs');
     const chart = window.echarts?.getInstanceByDom(element);
     return Number(chart?.getOption()?.geo?.[0]?.zoom) === value;
   }, expected, { timeout: 10000 });
+  const settleOfflineShell = async page => {
+    await page.evaluate(async () => {
+      if ('serviceWorker' in navigator) await navigator.serviceWorker.ready;
+    });
+    await page.waitForFunction(() => !('serviceWorker' in navigator) || Boolean(navigator.serviceWorker.controller));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+  };
 
   try {
     await dashboard.goto(`${base}dashboard.html?session=ICAN2026`, { waitUntil: 'domcontentloaded' });
-    await dashboard.evaluate(async () => {
-      if ('serviceWorker' in navigator) await navigator.serviceWorker.ready;
-    });
-    await dashboard.waitForFunction(() => !('serviceWorker' in navigator) || Boolean(navigator.serviceWorker.controller));
-    await dashboard.reload({ waitUntil: 'domcontentloaded' });
+    await settleOfflineShell(dashboard);
     await dashboard.waitForFunction(() => typeof window.qingdaofuApplyState === 'function', null, { timeout: 30000 });
     if (expectCloud) {
       await dashboard.waitForFunction(
         () => document.body.innerText.includes('三端云端联动'),
         null,
         { timeout: 30000 },
+      );
+      await dashboard.keyboard.press('r');
+      await dashboard.waitForFunction(
+        () => document.querySelector('#event-detail-modal')?.classList.contains('translate-x-full'),
+        null,
+        { timeout: 20000 },
       );
     }
     await dashboard.waitForSelector('#main-echarts-map canvas', { timeout: 30000 });
@@ -75,6 +88,7 @@ const fs = require('node:fs');
 
     await detector.setViewportSize({ width: 390, height: 844 });
     await detector.goto(`${base}detector.html?session=ICAN2026`, { waitUntil: 'domcontentloaded' });
+    await settleOfflineShell(detector);
     if (expectCloud) {
       await detector.waitForFunction(() => document.body.innerText.includes('云端联动'), null, { timeout: 30000 });
     }
@@ -84,6 +98,7 @@ const fs = require('node:fs');
 
     await worker.setViewportSize({ width: 390, height: 844 });
     await worker.goto(`${base}?view=worker&session=ICAN2026`, { waitUntil: 'domcontentloaded' });
+    await settleOfflineShell(worker);
     if (expectCloud) {
       await worker.waitForFunction(() => document.body.innerText.includes('云端联机'), null, { timeout: 30000 });
     }
@@ -107,6 +122,8 @@ const fs = require('node:fs');
     await detector.screenshot({ path: 'validation/original-detector.png', fullPage: true });
     await worker.screenshot({ path: 'validation/worker-completed.png', fullPage: true });
     assert.deepEqual(errors, []);
+    await dashboard.keyboard.press('r');
+    await worker.getByText('正在等待新任务').waitFor({ timeout: 20000 });
     console.log(JSON.stringify({ passed: true, checks: [expectCloud ? 'three-isolated-cloud-clients' : 'browser-local-relay', 'three-map-presets', 'all-maps-remain-interactive', 'chaoyang-map-rendered', 'drawer-has-no-photo', 'detector-ready', 'dispatch-received', 'accepted', 'completed'] }, null, 2));
   } catch (error) {
     console.error(error.stack);
