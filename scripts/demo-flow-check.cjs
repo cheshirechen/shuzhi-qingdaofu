@@ -20,7 +20,7 @@ const fs = require('node:fs');
         try { details.push(JSON.stringify(await argument.jsonValue())); }
         catch { details.push(argument.toString()); }
       }
-      browserLogs.push(`${page.url()}: ${message.type()}: ${details.join(' ')}`);
+      browserLogs.push(`${page.url()}: ${message.type()}: ${message.text()} | args: ${details.join(' ')}`);
     });
   };
   const dashboard = await dashboardContext.newPage(); track(dashboard);

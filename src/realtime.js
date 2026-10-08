@@ -25,8 +25,10 @@ function cloudReady(config) {
 
 function snapshotRoom(snapshot) {
   const docs = snapshot?.docs || snapshot?.data || [];
-  if (Array.isArray(docs)) return docs[0] || null;
-  return docs && typeof docs === 'object' ? docs : null;
+  const room = Array.isArray(docs) ? docs[0] : docs;
+  if (!room || typeof room !== 'object') return null;
+  const { _id, _openid, ...state } = room;
+  return state;
 }
 
 export class DemoRelay {
