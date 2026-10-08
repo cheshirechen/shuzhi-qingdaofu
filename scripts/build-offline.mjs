@@ -16,7 +16,7 @@ self.addEventListener('fetch',event=>{
  const url=new URL(event.request.url);
  if(event.request.method!=='GET'||url.origin!==self.location.origin||!url.pathname.startsWith(BASE)||url.pathname.endsWith('.onnx'))return;
  if(event.request.mode==='navigate'){
-   event.respondWith(fetch(event.request).catch(async()=>await caches.match(BASE+'index.html')||await caches.match(BASE)));return;
+   event.respondWith(fetch(event.request).catch(async()=>await caches.match(event.request)||await caches.match(BASE+'index.html')||await caches.match(BASE)));return;
  }
  if(FILES.includes(url.pathname))event.respondWith((async()=>{const cache=await caches.open(CACHE);const cached=await cache.match(event.request);if(cached)return cached;const response=await fetch(event.request);if(response.ok)await cache.put(event.request,response.clone());return response;})());
 });

@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基于北斗与大模型的空地协同智慧巡检系统</title>
+    <!-- Tailwind CSS for rapid layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- ECharts 图表与朝阳区本地地图 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    
+    <style>
+        /* 引入科技感字体 */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+SC:wght@300;400;700&display=swap');
+
+        :root {
+            --cyan: #00f3ff;
+            --blue: #0a1930;
+            --dark-bg: #010811;
+            --alert-red: #ff3366;
+            --neon-green: #39ff14;
+            --warn-yellow: #ffcc00;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #fff;
+            font-family: 'Noto Sans SC', sans-serif;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, #06193b 0%, #010811 100%),
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        .font-tech { font-family: 'Orbitron', sans-serif; }
+
+        /* HUD 半透明玻璃拟态风格 */
+        .hud-box {
+            background: rgba(4, 16, 35, 0.35); 
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 243, 255, 0.15);
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        /* 四角装饰 */
+        .hud-box::before, .hud-box::after, .hud-box-inner::before, .hud-box-inner::after {
+            content: ''; position: absolute; width: 10px; height: 10px; border-color: var(--cyan); border-style: solid;
+            pointer-events: none; z-index: 20;
+        }
+        .hud-box::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .hud-box::after { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+        .hud-box-inner::before { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+        .hud-box-inner::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+        /* 发光文字 */
+        .glow-text { text-shadow: 0 0 12px var(--cyan); }
+        .glow-text-red { text-shadow: 0 0 12px var(--alert-red); color: var(--alert-red); }
+
+        /* AI 打字机闪烁光标 */
+        .cursor-blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* 扫描线动画 */
+        .scanline {
+            width: 100%; height: 100px;
+            background: linear-gradient(0deg, rgba(0,243,255,0) 0%, rgba(0,243,255,0.2) 50%, rgba(0,243,255,0) 100%);
+            opacity: 0.5; position: absolute; bottom: 100%;
+            animation: scan 4s linear infinite; pointer-events: none;
+        }
+        @keyframes scan { 0% { bottom: 100%; } 100% { bottom: -100px; } }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 243, 255, 0.5); border-radius: 2px; }
+
+        /* 按钮与交互特效 */
+        .btn-glitch {
+            background: linear-gradient(45deg, transparent 5%, var(--cyan) 5%);
+            color: var(--dark-bg); font-weight: bold; text-transform: uppercase;
+            box-shadow: 6px 0px 0px #00e6f2; transition: all 0.2s; cursor: pointer;
+        }
+        .btn-glitch:hover { box-shadow: 2px 0px 0px #00e6f2; transform: translateX(4px); }
+        
+        .btn-outline {
+            border: 1px solid var(--cyan); color: var(--cyan); cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2) inset; transition: all 0.3s;
+            background: rgba(0, 243, 255, 0.05);
+        }
+        .btn-outline:hover { background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 20px rgba(0, 243, 255, 0.5) inset; }
+        .active-tab { background: rgba(0, 243, 255, 0.3); font-weight: bold; border-bottom: 2px solid var(--cyan); color: #fff; }
+
+        /* 小按钮交互群 */
+        .btn-icon {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 80px; height: 60px; border: 1px solid rgba(0,243,255,0.3);
+            background: rgba(4,16,35,0.6); border-radius: 4px; cursor: pointer;
+            transition: all 0.2s; color: #ccc; font-size: 11px; gap: 6px;
+            position: relative; z-index: 30; /* 确保不被层级遮挡 */
+        }
+        .btn-icon:hover {
+            border-color: var(--cyan); color: var(--cyan);
+            box-shadow: 0 0 15px rgba(0,243,255,0.4) inset; transform: scale(1.05); background: rgba(0,243,255,0.1);
+        }
+        .btn-icon svg { width: 22px; height: 22px; fill: currentColor; }
+
+        /* 模态框动画 */
+        .modal-enter { animation: modalFadeIn 0.3s ease-out forwards; }
+        .modal-leave { animation: modalFadeOut 0.2s ease-in forwards; }
+        @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes modalFadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
+
+        /* 列表悬停 */
+        .hover-list-item { cursor: pointer; transition: all 0.2s; }
+        .hover-list-item:hover { background: rgba(0, 243, 255, 0.15); transform: translateX(5px); border-left-color: var(--neon-green); }
+
+        /* 自定义下拉菜单滚动条以匹配科技感 */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.5); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 2px; }
+
+        /* 多页面容器样式 */
+        .page-container {
+            position: absolute; inset: 0; display: flex; flex-direction: column; padding: 1rem;
+            transition: opacity 0.3s ease-in-out; background: transparent;
+        }
+        .page-hidden { opacity: 0; pointer-events: none; z-index: -1; }
+        .page-active { opacity: 1; pointer-events: auto; z-index: 10; }
+
+        /* AR 视窗全屏模式下的等比例放大样式 (针对页面2) */
+        .ar-fullscreen-mode { border: none !important; border-radius: 0 !important; }
+        .ar-fullscreen-mode .hud-scale-text { transform: scale(1.8); transform-origin: top left; }
+        .ar-fullscreen-mode .hud-scale-btn { transform: scale(1.5); transform-origin: top right; margin-top: 10px; margin-right: 10px; }
+        .ar-fullscreen-mode .hud-scale-device { transform: scale(1.5); transform-origin: bottom right; margin-bottom: 20px; margin-right: 20px;}
+        .ar-fullscreen-mode .hud-scale-fs { transform: scale(2); transform-origin: bottom left; margin-bottom: 20px; margin-left: 20px;}
+
+        /* 隐藏百度地图自带信息 */
+        .BMap_cpyCtrl, .anchorBL, .BMap_scaleCtrl { display: none !important; }
+    </style>
+</head>
+<body class="h-screen w-screen relative">
+
+    <!-- 全局背景图层 -->
+    <div class="absolute inset-0 pointer-events-none z-0 opacity-40 mix-blend-screen bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center"></div>
+
+    <!-- ================================= 页面 1：主大屏 ================================= -->
+    <div id="page-1" class="page-container page-active">
+        <!-- 顶部 Header -->
+        <header class="h-16 flex justify-between items-center mb-4 px-6 hud-box shrink-0 relative">
+            <div class="hud-box-inner w-full h-full absolute inset-0 pointer-events-none"></div>
+            <div class="flex items-center gap-4 z-10">
+                <div class="w-3 h-3 rounded-full bg-green-400 animate-pulse shadow-[0_0_10px_#39ff14]"></div>
+                <span class="text-gray-300 text-sm cursor-pointer hover:text-cyan-400" onclick="openModal('system-settings-modal')">SYSTEM SETTINGS ⚙️</span>
+                <span class="text-cyan-400 text-sm font-tech ml-4 cursor-pointer hover:text-white" onclick="openModal('sat-detail-modal')">BD-RTK SATS: 24 🛰️</span>
+            </div>
+
+            <span id="sync-status" class="absolute left-6 bottom-1 z-20 text-[10px] text-yellow-300 border border-yellow-700/60 bg-yellow-900/20 px-2 py-0.5 rounded font-tech">云端连接中</span>
+            
+            <h1 class="text-2xl whitespace-nowrap font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 glow-text z-10 tracking-widest cursor-pointer drop-shadow-lg" onclick="openModal('report-modal')">
+                基于北斗与大模型的空地协同智慧巡检系统
+            </h1>
+
+            <div class="flex items-center gap-4 z-10">
+                <button onclick="generateGlobalReport()" class="btn-outline px-4 py-2 text-sm rounded shadow-[0_0_10px_rgba(0,243,255,0.3)] flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    生成全局报告
+                </button>
+                <div class="text-right font-tech ml-4">
+                    <div class="text-sm text-cyan-400" id="current-date">2026-02-24</div>
+                    <div class="text-xl font-bold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" id="current-time">20:51:28</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主体内容网格 -->
+        <main class="flex-1 grid grid-cols-12 gap-4 min-h-0 z-10 relative">
+            
+            <!-- 左侧：感知层 -->
+            <div class="col-span-3 flex flex-col gap-4 h-full min-h-0">
+                <!-- 模块1：AR增强现实驾驶舱 -->
+                <div class="hud-box flex-[1.2] flex flex-col p-3 overflow-hidden min-h-0">
+                    <div class="hud-box-inner w-full h-full absolute inset-0 pointer-events-none"></div>
+                    <div class="flex justify-between items-center mb-2 z-10 border-b border-cyan-800/50 pb-1">
+                        <h2 class="text-cyan-400 font-bold flex items-center gap-2 cursor-pointer hover:text-white" onclick="openModal('cam-matrix-modal')">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm14 0H4v8h12V6zM6 8a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm0 4a1 1 0 011-1h4a1 1 0 110 2H7a1 1 0 01-1-1z"></path></svg>
+                            AR 边缘计算视窗 🎥
+                        </h2>
+                        <span class="text-xs bg-cyan-900/60 text-cyan-200 px-2 py-0.5 rounded font-tech border border-cyan-700 hover:bg-cyan-700 cursor-pointer" onclick="openModal('sat-detail-modal')" id="ar-coords">LAT:39.9 LNG:116.3</span>
+                    </div>
+                    
+                    <!-- 【页面嵌套预留】：AR视窗容器 -->
+                    <div id="ar-wrapper" class="relative flex-1 min-h-0 bg-transparent flex flex-col">
+                        <div id="ar-view-container" class="relative flex-1 bg-black rounded border border-cyan-900/50 overflow-hidden z-10 cursor-crosshair transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.8)_inset]">
+                            <canvas id="ar-canvas" class="w-full h-full object-cover"></canvas>
+                            <div class="scanline"></div>
+                            
+                            <div class="absolute top-1 right-1 flex gap-1 z-20 font-tech hud-scale-btn">
+                                <button onclick="switchARDevice(0)" id="ar-btn-0" class="text-[9px] px-1.5 py-0.5 border border-cyan-500 bg-cyan-900/80 text-white transition-colors">001</button>
+                                <button onclick="switchARDevice(1)" id="ar-btn-1" class="text-[9px] px-1.5 py-0.5 border border-gray-600 bg-black/50 text-gray-400 hover:text-cyan-300 transition-colors">002</button>
+                                <button onclick="switchARDevice(2)" id="ar-btn-2" class="text-[9px] px-1.5 py-0.5 border border-gray-600 bg-black/50 text-gray-400 hover:text-cyan-300 transition-colors">003</button>
+                                <div class="relative">
+                                    <button onclick="toggleARDropdown(event)" class="text-[9px] px-1.5 py-0.5 border border-gray-600 bg-black/50 text-gray-400 hover:text-cyan-300 transition-colors flex items-center justify-center">▽</button>
+                                    <!-- 展开列表，加入 grid 确保多达 100 个按钮排版美观 -->
+                                    <div id="ar-dropdown" class="absolute right-0 top-full mt-1 w-56 max-h-48 custom-scrollbar overflow-y-auto bg-black/90 border border-cyan-800 hidden grid-cols-4 gap-1 p-1.5 z-[100] shadow-[0_0_15px_rgba(0,243,255,0.3)]"></div>
+                                </div>
+                            </div>
+
+                            <div class="absolute top-2 left-2 text-[10px] text-neon-green font-tech drop-shadow-md hud-scale-text transition-transform" id="ar-hud-text">
+                                <div id="ar-fps">FPS: 60</div>
+                                <div id="ar-type">YOLOv5-Edge Active</div>
+                                <div class="text-cyan-400 mt-1" id="ar-speed">Speed: 45 km/h</div>
+                            </div>
+
+                            <!-- 放大/缩小按钮 -->
+                            <div class="absolute bottom-2 left-2 z-20 cursor-pointer text-gray-400 hover:text-cyan-400 bg-black/60 border border-gray-700 p-1.5 rounded transition-colors hud-scale-fs" onclick="toggleARFullscreen()" title="切换视窗放大/缩小">
+                                <svg id="fs-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                                </svg>
+                            </div>
+
+                            <div class="absolute bottom-2 right-2 text-[10px] text-white/60 animate-pulse hud-scale-device" id="ar-device-name">[ 巡检车-A 视角接入中 ]</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 模块2：各月处理情况图 -->
+                <!-- 修正：移除 onclick 到全体导致与图标交互冲突，并增加本地 min-h 保底防止图表消失 -->
+                <div class="hud-box flex-1 p-3 flex flex-col hover:shadow-[0_0_15px_rgba(0,243,255,0.2)_inset] transition-all min-h-0">
+                    <div class="hud-box-inner w-full h-full absolute inset-0 pointer-events-none"></div>
+                    <h2 class="text-cyan-400 font-bold mb-2 z-10 text-sm flex justify-between shrink-0 cursor-pointer hover:text-white" onclick="openModal('finance-modal')">
+                        各月处理情况统计 <span>📈</span>
+                    </h2>
+                    <!-- 移除 pointer-events-none，加入显式最小高度保证本地计算正常 -->
+                    <div id="cost-chart" class="flex-1 w-full z-10 min-h-[220px]"></div>
+                </div>
+                
+                <!-- 模块3：北斗智巡社会效益 -->
+                <div class="hud-box h-[28%] p-3 flex flex-col min-h-0 shrink-0">
+                    <div class="hud-box-inner w-full h-full absolute inset-0 pointer-events-none"></div>
+                    <h2 class="text-cyan-400 font-bold mb-2 z-10 text-sm shrink-0">北斗智巡实时成效看板</h2>
+                    <div class="flex-1 flex flex-col gap-2 z-10 font-tech">
+                        <!-- 第一行 -->
+                        <div class="grid grid-cols-3 gap-2 flex-1">
+                            <div class="bg-blue-900/30 rounded border border-cyan-800/40 flex flex-col justify-center items-center">
+                                <div class="text-xs text-gray-400 mb-1">今日已处理</div>
+                                <div class="text-3xl text-cyan-400 font-bold glow-text">125,811</div>
+                            </div>
+                            <div class="bg-blue-900/30 rounded border border-cyan-800/40 flex flex-col justify-center items-center">
+                                <div class="text-xs text-gray-400 mb-1">今日待处理</div>
+                                <div class="text-3xl text-warn-yellow font-bold">1,452</div>
+                            </div>
+                            <div class="bg-blue-900/30 rounded border border-cyan-800/40 flex flex-col justify-center items-center">
+                                <div class="text-xs text-gray-400 mb-1">巡检里程(KM)</div>
+                                <div class="text-3xl text-white font-bold">45,210</div>
+                            </div>
+                        </div>
+                        <!-- 第二行 -->
+                        <div class="grid grid-cols-2 gap-2 flex-1">
+                            <div class="bg-blue-900/30 rounded border border-cyan-800/40 flex flex-col justify-center items-center cursor-pointer hover:bg-cyan-900/50">
+                                <div class="text-xs text-gray-400 mb-1">碳排放减少量</div>
+                                <div class="text-3xl text-green-400 font-bold glow-text">12,450 <span class="text-sm font-normal text-gray-300">kg</span></div>
+                            </div>
+                            <div class="bg-blue-900/30 rounded border border-cyan-800/40 flex flex-col justify-center items-center cursor-pointer hover:bg-cyan-900/50">
+                                <div class="text-xs text-gray-400 mb-1">病害处理提效</div>
+                                <div class="text-3xl text-cyan-400 font-bold glow-text">+ 345 <span class="text-sm font-normal text-gray-300">%</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间：中枢层 -->
+            <div class="col-span-6 flex flex-col gap-4 h-full relative min-h-0">
+                
+                <!-- 数据总览与快捷入口 -->
+                <div class="flex gap-4 h-20 z-10 shrink-0">
+                    <!-- 左侧 2/3 -->
+                    <div class="hud-box flex-[2] flex justify-around items-center p-2 z-10">
+                        <div class="hud-box-inner absolute inset-0 pointer-events-none"></div>
+                        <div class="text-center z-10 cursor-pointer hover:scale-105 transition-transform" onclick="openModal('data-archive-modal')">
+                            <div class="text-sm text-gray-400 mb-1">今日累计异常</div>
+                            <div class="text-5xl font-tech text-cyan-400 glow-text" id="total-issues">125,811</div>
+                        </div>
+                        <div class="w-px h-12 bg-cyan-900/50"></div>
+                        <div class="text-center z-10 cursor-pointer hover:scale-105 transition-transform" onclick="openModal('ai-model-modal')">
+                            <div class="text-sm text-gray-400 mb-1">AI自动闭环率</div>
+                            <div class="text-5xl font-tech text-neon-green glow-text">98.2%</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧 1/3 -->
+                    <div class="hud-box flex-[1] flex justify-center gap-3 items-center p-2 z-10">
+                        <div class="hud-box-inner absolute inset-0 pointer-events-none"></div>
+                        <div class="btn-icon flex-1 h-full" onclick="switchPage('page-3')">
+                            <svg viewBox="0 0 24 24"><path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 10h2v7H7v-7zm4-4h2v11h-2V6zm4 5h2v6h-2v-6z"/></svg>
+                            <span class="text-[12px] tracking-widest mt-1">数据统计</span>
+                        </div>
+                        <div class="btn-icon flex-1 h-full" onclick="switchPage('page-4')">
+                            <svg viewBox="0 0 24 24"><path d="M19.36 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.64-4.96z"/></svg>
+                            <span class="text-[12px] tracking-widest mt-1">气象孪生</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 核心交互式数字孪生区 -->
+                <div class="hud-box flex-1 p-1 flex flex-col relative overflow-hidden min-h-0 bg-[#010812]">
+                    <div class="hud-box-inner w-full h-full absolute inset-0 pointer-events-none z-20"></div>
+
+                    <div id="main-map-loading" class="absolute inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur map-loading-overlay">
+                        <div class="text-cyan-400 font-tech flex flex-col items-center">
+                            <div class="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                            正在加载高精度空间网格...
+                        </div>
+                    </div>
+
+                    <!-- 切换 Tabs -->
+                    <div class="absolute top-4 left-4 z-30 flex gap-2 bg-black/40 p-1.5 rounded backdrop-blur-md border border-cyan-900/60 shadow-lg">
+                        <button onclick="switchMapMode('sense')" id="tab-sense" class="btn-outline active-tab px-4 py-1.5 text-xs rounded-sm">态势感知 (北斗实景)</button>
+                        <button onclick="switchMapMode('heat')" id="tab-heat" class="btn-outline px-4 py-1.5 text-xs rounded-sm">病害热力追踪</button>
+                        <button onclick="switchMapMode('dispatch')" id="tab-dispatch" class="btn-outline px-4 py-1.5 text-xs rounded-sm">AI 派单推演</button>
+                    </div>
+                    
+                    <!-- 容器 -->
+                    <div id="main-echarts-map" class="relative w-full h-full z-10 rounded-sm overflow-hidden cursor-move bg-[#010811]"></div>
+                    
+                    <!-- 氛围光 -->
+                    <div class="absolute inset-0 pointer-events-none flex items-center justify-center opacity-20 z-20">
+                        <div class="w-96 h-96 border rounded-full border-cyan-500 border-dashed animate-[spin_30s_linear_infinite]"></div>
+                        <div class="absolute w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
+                        <div class="absolute h-full w-[1px] bg-gradient-to-b from-transparent via-cyan-500/50 to-transparent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：认知与决策层 -->
+            <div class="col-span-3 flex flex-col gap-4 h-full min-h-0">
+                
+                <!-- 模块1：实时巡检动态 -->
+                <div class="hud-box flex-[1_1_35%] min-h-0 flex flex-col p-3">
+                    <div class="hud-box-inner w-full h-full absolute inset-0 pointer-events-none"></div>
+                    <h2 class="text-cyan-400 font-bold mb-2 z-10 text-sm flex justify-between shrink-0 border-b border-cyan-900/50 pb-2">
+                        实时异常事件池 <span class="text-xs text-gray-500 font-normal">点击条目查看现场</span>
+                    </h2>
+                    <div class="flex-1 overflow-hidden z-10 relative">
+                        <div class="absolute bottom-0 w-full h-8 bg-gradient-to-t from-[rgba(4,16,35,0.9)] to-transparent z-10 pointer-events-none"></div>
+                        <ul id="event-list" class="text-sm space-y-2 h-full overflow-y-auto pr-2 pb-8">
+                            <!-- 动态插入 -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 模块2：AI大模型调度官 -->
+                <div class="hud-box flex-[1_1_45%] min-h-0 flex flex-col p-3 relative shadow-[0_0_30px_rgba(0,243,255,0.05)_inset]">
+                    <div class="hud-box-inner w-full h-full absolute inset-0 pointer-events-none"></div>
+                    
+                    <div class="flex justify-between items-center mb-3 z-10 border-b border-cyan-800/50 pb-2 shrink-0">
+                        <h2 class="text-white font-bold flex items-center gap-2 cursor-pointer hover:text-cyan-400" onclick="openModal('ai-model-modal')">
+                            <div class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></div>
+                            具身智能调度中心 🧠
+                        </h2>
+                        <span class="text-[10px] border border-blue-500 text-blue-300 px-1.5 py-0.5 rounded cursor-pointer hover:bg-blue-900 bg-blue-900/30" onclick="alert('当前模型：DeepSeek-R1\n状态：在线\n延迟：12ms')">DeepSeek-R1-Distill-Qwen-7B</span>
+                    </div>
+
+                    <div class="flex-1 bg-black/40 rounded border border-cyan-900/40 p-3 overflow-y-auto z-10 text-sm font-light leading-relaxed mb-3 relative custom-scrollbar" id="ai-chat-box">
+                        <div class="text-gray-400 italic mb-2 font-tech">DeepSeek-R1 Standby. 等待边缘节点数据汇入...</div>
+                    </div>
+
+                    <!-- 新增输入框 -->
+                    <div class="z-10 mb-2 shrink-0 flex gap-2 items-center">
+                        <input type="text" id="user-ai-input" class="flex-1 bg-black/50 border border-cyan-800/60 rounded px-2 py-1.5 text-xs text-cyan-200 outline-none focus:border-cyan-400 transition-colors placeholder-cyan-900" placeholder="在此输入修改建议或补充指令..." onkeydown="if(event.key==='Enter') sendUserMessage()" />
+                        <button onclick="sendUserMessage()" class="bg-cyan-900/40 border border-cyan-700 hover:bg-cyan-700/60 text-cyan-300 rounded w-8 h-8 flex items-center justify-center transition-colors shadow-[0_0_8px_rgba(0,243,255,0.2)]" title="发送指令">
+                            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- 修改后的动作按钮 -->
+                    <div class="z-10 mt-auto shrink-0">
+                        <div class="flex gap-2">
+                            <button onclick="triggerEmergencyDemo()" class="flex-[2] btn-glitch py-2 text-sm rounded-sm whitespace-nowrap overflow-hidden text-ellipsis px-1">
+                                AI大模型智能决策
+                            </button>
+                            <button onclick="confirmDispatch()" class="flex-[1] btn-outline py-2 text-sm rounded-sm font-bold bg-cyan-900/30 hover:bg-cyan-700/50">
+                                确定
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-2 text-center opacity-80">逻辑：拦截高优告警 -> 认知分析 -> 推演派单 -> 确认</p>
+                    </div>
+                </div>
+                
+                <!-- 占比饼图 -->
+                <!-- 同样修正图表的容器包裹方式及尺寸问题 -->
+                <div class="hud-box flex-[1_1_20%] min-h-0 p-3 flex flex-col hover:shadow-[0_0_15px_rgba(0,243,255,0.2)_inset]">
+                    <div class="hud-box-inner w-full h-full absolute inset-0 pointer-events-none"></div>
+                    <h2 class="text-cyan-400 font-bold mb-1 z-10 text-sm flex justify-between shrink-0 cursor-pointer hover:text-white" onclick="openModal('data-archive-modal')">
+                        病害知识图谱 <span>📊</span>
+                    </h2>
+                    <!-- 解除 hover 封印并保障高度 -->
+                    <div id="pie-chart" class="flex-1 w-full z-10 min-h-[160px]"></div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ================================= 页面 2：AR 全屏沉浸视窗 ================================= -->
+    <div id="page-2" class="page-container page-hidden bg-black z-[100] p-0 border-none">
+        <!-- 这里的容器是由 JS 的 toggleARFullscreen() 从页面1动态“剪切”过来的，确保渲染不断层 -->
+    </div>
+
+    <!-- ================================= 页面 3：数据统计 (行政区划) ================================= -->
+    <div id="page-3" class="page-container page-hidden bg-[#020a15]">
+        <div class="absolute inset-0 pointer-events-none z-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center mix-blend-screen"></div>
+        <header class="h-14 flex justify-between items-center px-6 hud-box shrink-0 z-20 mb-4">
+            <div class="flex items-center gap-4">
+                <button onclick="switchPage('page-1')" class="btn-outline px-3 py-1 text-sm rounded cursor-pointer z-30">← 返回主控指挥舱</button>
+                <h2 class="text-xl font-bold text-cyan-400 glow-text ml-4 tracking-widest">北京市各区·智慧巡检运行态势档案</h2>
+            </div>
+            <div class="text-cyan-500 font-tech text-sm">DEEPSEEK-R1 DATA ENGINE</div>
+        </header>
+        <div class="flex-1 relative z-10 hud-box overflow-hidden">
+            <div id="page3-loading" class="absolute inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur map-loading-overlay">
+                <span class="text-cyan-400 font-tech">加载区域网格中...</span>
+            </div>
+            <div id="page3-map" class="w-full h-full cursor-move"></div>
+            <div class="absolute bottom-6 right-6 bg-black/60 border border-cyan-800 p-4 rounded backdrop-blur">
+                <h3 class="text-cyan-400 mb-2 border-b border-cyan-800 pb-1">操作指引</h3>
+                <ul class="text-xs text-gray-300 space-y-1">
+                    <li>· 鼠标悬停行政区划查看详细巡检报表</li>
+                    <li>· 支持滚轮缩放与拖拽漫游</li>
+                    <li>· 数据由云端实时聚合汇总</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================= 页面 4：天气气象孪生 ================================= -->
+    <div id="page-4" class="page-container page-hidden bg-[#020a15]">
+        <div class="absolute inset-0 pointer-events-none z-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center mix-blend-screen"></div>
+        <header class="h-14 flex justify-between items-center px-6 hud-box shrink-0 z-20 mb-4 border-cyan-500">
+            <div class="flex items-center gap-4">
+                <button onclick="switchPage('page-1')" class="btn-outline px-3 py-1 text-sm rounded border-cyan-300 text-cyan-300 cursor-pointer z-30">← 返回主控指挥舱</button>
+                <h2 class="text-xl font-bold text-cyan-300 glow-text ml-4 tracking-widest">微气候气象孪生与路面影响预测</h2>
+            </div>
+            <div class="text-cyan-400 font-tech text-sm flex gap-4">
+                <span>数据来源：心知天气 API</span>
+            </div>
+        </header>
+        <div class="flex-1 relative z-10 hud-box overflow-hidden">
+            <div id="page4-map" class="w-full h-full cursor-move"></div>
+            <!-- 图例说明 -->
+            <div class="absolute bottom-6 left-6 bg-black/70 border border-cyan-800 p-3 rounded backdrop-blur font-tech text-xs">
+                <div class="text-white mb-2 font-bold">气象网格影响系数</div>
+                <div class="flex items-center gap-2 mb-1"><span class="w-3 h-3 bg-[#e74c3c] inline-block"></span> 雷暴/大雨 (高风险)</div>
+                <div class="flex items-center gap-2 mb-1"><span class="w-3 h-3 bg-[#f1c40f] inline-block"></span> 大风/沙尘 (中风险)</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-[#2ecc71] inline-block"></span> 晴朗/多云 (良好)</div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ====================== 所有的弹出窗口 ====================== -->
+    <!-- 1. 全局态势总结报告模态框 -->
+    <div id="report-modal" class="fixed inset-0 z-[110] hidden bg-black/80 backdrop-blur-md items-center justify-center p-8">
+        <div class="hud-box w-full max-w-5xl max-h-[90vh] flex flex-col relative modal-enter bg-[rgba(5,15,30,0.95)]">
+            <div class="hud-box-inner absolute inset-0 pointer-events-none"></div>
+            <div class="p-4 border-b border-cyan-800 flex justify-between items-center z-10 shrink-0">
+                <h2 class="text-2xl font-bold text-cyan-400 flex items-center gap-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    2026年 智慧城管全局态势分析报告
+                </h2>
+                <div class="flex gap-4">
+                    <button class="btn-outline px-3 py-1 text-xs" onclick="downloadPDF()">📥 导出 PDF</button>
+                    <button onclick="closeModal('report-modal')" class="text-gray-400 hover:text-red-400 text-2xl leading-none">&times;</button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto z-10 flex-1 grid grid-cols-2 gap-6" id="report-content">
+                <!-- 左侧 AI 研判文本 -->
+                <div class="col-span-1 bg-black/40 p-4 border border-cyan-900 rounded">
+                    <h3 class="text-neon-green font-bold mb-4 border-b border-cyan-900 pb-2">🧠 DeepSeek-R1 综合研判</h3>
+                    <div id="ai-report-text" class="text-sm text-gray-200 leading-loose font-light whitespace-pre-wrap">
+                        (点击“生成全局报告”按钮后，大模型将在此生成实时总结...)
+                    </div>
+                </div>
+                <!-- 右侧 核心数据及雷达图 -->
+                <div class="col-span-1 flex flex-col gap-4">
+                    <div class="grid grid-cols-2 gap-4 font-tech">
+                        <div class="bg-blue-900/30 p-4 border border-cyan-800 text-center flex flex-col justify-center">
+                            <div class="text-xs text-gray-400 mb-1">累计排查里程</div>
+                            <div class="text-2xl text-cyan-400 font-bold">450,210 <span class="text-sm">KM</span></div>
+                        </div>
+                        <div class="bg-blue-900/30 p-4 border border-cyan-800 text-center flex flex-col justify-center">
+                            <div class="text-xs text-gray-400 mb-1">设备平均完好率</div>
+                            <div class="text-2xl text-green-400 font-bold">99.4%</div>
+                        </div>
+                        <div class="bg-blue-900/30 p-4 border border-cyan-800 text-center flex flex-col justify-center">
+                            <div class="text-xs text-gray-400 mb-1">突发事件响应耗时</div>
+                            <div class="text-2xl text-yellow-400 font-bold">4.2 <span class="text-sm">MIN</span></div>
+                        </div>
+                        <div class="bg-blue-900/30 p-4 border border-cyan-800 text-center flex flex-col justify-center">
+                            <div class="text-xs text-gray-400 mb-1">人力成本节约</div>
+                            <div class="text-2xl text-cyan-400 font-bold">¥ 2.45M</div>
+                        </div>
+                    </div>
+                    <!-- 真实的 ECharts 雷达图容器 -->
+                    <div class="flex-1 border border-cyan-800 bg-black/50 flex flex-col p-2 relative min-h-[250px]">
+                        <div class="text-cyan-500 font-bold z-10 text-center text-sm pt-2">城市治理能力六维模型评估</div>
+                        <div id="radar-chart-container" class="flex-1 w-full h-full"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 事件详情抽屉 -->
+    <div id="event-detail-modal" class="fixed right-0 top-0 bottom-0 w-96 bg-[rgba(10,25,48,0.95)] border-l border-cyan-500 z-[110] transform translate-x-full transition-transform duration-300 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.8)] backdrop-blur-md">
+        <div class="p-4 border-b border-cyan-800 flex justify-between items-center shrink-0">
+            <h3 class="text-cyan-400 font-bold">📋 事件处置详情</h3>
+            <button onclick="closeDrawer('event-detail-modal')" class="text-gray-400 hover:text-white text-xl">&times;</button>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto">
+            <div class="mb-4 rounded border border-cyan-800/70 bg-cyan-950/30 p-4 font-tech">
+                <div class="text-xs text-cyan-500 mb-2">BEIDOU EVENT ANCHOR</div>
+                <div class="flex items-end justify-between gap-3">
+                    <div><div class="text-white text-lg font-bold">北京工业大学</div><div class="text-gray-400 text-xs">平乐园校区 · 朝阳区</div></div>
+                    <div class="text-right"><div class="text-neon-green text-lg">1.6 m</div><div class="text-gray-500 text-xs">定位精度</div></div>
+                </div>
+            </div>
+            <div class="space-y-3 text-sm">
+                <p><span class="text-gray-400">事件编号：</span><span class="font-tech text-cyan-300" id="detail-id">EVT-2026-X</span></p>
+                <p><span class="text-gray-400">发生位置：</span><span class="text-white" id="detail-loc">加载中...</span></p>
+                <p><span class="text-gray-400">病害描述：</span><span class="text-warn-yellow" id="detail-desc">加载中...</span></p>
+                <p><span class="text-gray-400">识别置信度：</span><span class="font-tech text-cyan-300" id="detail-confidence">96%</span></p>
+                <p><span class="text-gray-400">事件时间：</span><span class="font-tech text-gray-300" id="detail-time">--:--:--</span></p>
+                <p><span class="text-gray-400">风险等级：</span><span class="text-warn-yellow">一般</span></p>
+                <p><span class="text-gray-400">北斗坐标：</span><span class="font-tech text-gray-300">39.8756°N&nbsp;&nbsp;116.4812°E</span></p>
+                <p><span class="text-gray-400">处置状态：</span><span class="text-neon-green" id="detail-status">已自动派单</span></p>
+            </div>
+            <button class="mt-6 w-full btn-outline py-2" onclick="alert('已连接至网格员通讯终端')">📞 联系附近网格员</button>
+        </div>
+    </div>
+
+    <!-- 逻辑脚本 -->
+    <script>
+        let isARFullscreen = false;
+        let radarChartInstance = null;
+        
+        // ================= 本地图片数组定义 =================
+        const localImages = [
+            'img1021_jpg.rf.4b036c828c40d8426623fb5924b35281.jpg',
+            'img1027_jpg.rf.27edb38d34715f37944bca0ee141c643.jpg',
+            'img106_jpg.rf.daffcb3a093e1d7f101f346b84c1267b.jpg',
+            'img1167_jpg.rf.a8a11bc212463ace61639b45aa07c89d.jpg',
+            'img1186_jpg.rf.231d3524547c7af4b0840b54b84610fe.jpg',
+            'img1209_jpg.rf.70ada985c1db809564f821b61efb52f1.jpg',
+            'img1231_jpg.rf.9c18fb9273b0d2994766d788fad48412.jpg',
+            'img1561_jpg.rf.61de42e36a3f578364d85b612cb702a5.jpg',
+            'img177_jpg.rf.2db5dd0337a220c64942dbb1b2138168.jpg',
+            'img178_jpg.rf.ee27683bb9fec9690aa5267b6cd66539.jpg',
+            'img1811_jpg.rf.e9002fe8dce4609713c514a832e5f267.jpg',
+            'img185_jpg.rf.5844585601381ecd869af5e7fd496140.jpg',
+            'img186_jpg.rf.5f0d6f47ea022361bf59d02c28df1d94.jpg',
+            'img1959_jpg.rf.14d8e6cc25b1cb6af91835b91c2a962b.jpg',
+            'img2598_jpg.rf.4867906bf32e4d6ed3a14627be40e485.jpg',
+            'img2642_jpg.rf.68b01385e72a360cfb0dd6a173260eb6.jpg',
+            'img3127_jpg.rf.b0f14ca67c47f9e530ee24fbfa974b34.jpg',
+            'img31_jpg.rf.ded881c2f77c7b62abe3dee860a66c70.jpg',
+            'img34_jpg.rf.d38618f963f6a45f7e6738e2b37d0e79.jpg',
+            'img54_jpg.rf.33668da8df87c5b07131c3106e4376bf.jpg',
+            'img73_jpg.rf.1a59cc394070568753305ec3abb45d79.jpg',
+            'img74_jpg.rf.bbb4afb4a76ceebdaf074aea38bf00e1.jpg',
+            'img79_jpg.rf.76dff954a439e6f0106bb99402c252e9.jpg',
+            'img82_jpg.rf.17c1c2929ddb63ced4328ad5b3ac0f7e - 副本.jpg'
+        ];
+
+        // ================= 页面切换逻辑 =================
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-container').forEach(el => {
+                el.classList.remove('page-active');
+                el.classList.add('page-hidden');
+            });
+            const target = document.getElementById(pageId);
+            if(target) {
+                target.classList.remove('page-hidden');
+                target.classList.add('page-active');
+            }
+            // 确保图表重新适应尺寸
+            setTimeout(() => {
+                if(pageId === 'page-3' && p3Chart) p3Chart.resize();
+                if(pageId === 'page-4' && p4Chart) p4Chart.resize();
+            }, 100);
+        }
+
+        // ================= 时间更新 =================
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', {hour12: false});
+            document.getElementById('current-date').innerText = now.toISOString().split('T')[0];
+        }, 1000);
+
+        // ================= 模态框/抽屉 =================
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if(modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+            if(id === 'report-modal' && !radarChartInstance) {
+                setTimeout(initRadarChart, 200); 
+            }
+        }
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if(modal) { modal.classList.remove('flex'); modal.classList.add('hidden'); }
+        }
+        function openDrawer(id, locText, descText, imgSrc, isEmg) {
+            const drawer = document.getElementById(id);
+            if(drawer) {
+                document.getElementById('detail-id').innerText = 'EVT-BD-' + Math.floor(Math.random()*10000);
+                document.getElementById('detail-loc').innerText = locText || '某路段';
+                document.getElementById('detail-desc').innerText = descText || '异常';
+                
+                const statusEl = document.getElementById('detail-status');
+                if(isEmg) {
+                    statusEl.innerText = '等待 DeepSeek 调度分配';
+                    statusEl.className = 'text-red-400 font-bold';
+                } else {
+                    statusEl.innerText = '已自动派单 (AI闭环)';
+                    statusEl.className = 'text-neon-green';
+                }
+                
+                drawer.classList.remove('translate-x-full');
+            }
+        }
+        function closeDrawer(id) {
+            const drawer = document.getElementById(id);
+            if(drawer) drawer.classList.add('translate-x-full');
+        }
+
+        function downloadPDF() {
+            const link = document.createElement('a');
+            link.href = '2026年智慧城管全局态势分析报告.pdf';
+            link.download = '2026年智慧城管全局态势分析报告.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function initRadarChart() {
+            radarChartInstance = echarts.init(document.getElementById('radar-chart-container'));
+            radarChartInstance.setOption({
+                radar: {
+                    indicator: [
+                        { name: '感知覆盖率', max: 100 },
+                        { name: '定位精度', max: 100 },
+                        { name: '响应速度', max: 100 },
+                        { name: '闭环率', max: 100 },
+                        { name: '算力利用率', max: 100 },
+                        { name: '降本增效', max: 100 }
+                    ],
+                    center: ['50%', '55%'],
+                    radius: '70%',
+                    axisName: { color: '#00f3ff', fontSize: 11 },
+                    splitLine: { lineStyle: { color: 'rgba(0, 243, 255, 0.2)' } },
+                    splitArea: { show: false },
+                    axisLine: { lineStyle: { color: 'rgba(0, 243, 255, 0.2)' } }
+                },
+                series: [{
+                    type: 'radar',
+                    data: [{
+                        value: [96, 99, 90, 98, 88, 92],
+                        name: '系统综合能力',
+                        itemStyle: { color: '#39ff14' },
+                        areaStyle: { color: 'rgba(57, 255, 20, 0.3)' },
+                        lineStyle: { width: 2 }
+                    }]
+                }]
+            });
+        }
+
+        async function generateGlobalReport() {
+            openModal('report-modal');
+            const reportBox = document.getElementById('ai-report-text');
+            reportBox.innerHTML = '<span class="text-cyan-400">>> DeepSeek-R1 正在汇集全局北斗时空数据，开始研判...</span>';
+            
+            const reportText = `【本周城市巡检态势综述】\n\n总体态势：\n依托北斗高精度定位与端侧AI算力，本周系统共处理异常感知数据 12.5万 宗。设备在线率 99.4%，算力节点运行平稳。\n\n病害分布分析：\n· 占比最高：白色垃圾（32%），主要集中于【科创大道】周边商业区，具有明显早晚高峰潮汐特征。\n· 严重病害：路面裂缝与违章占道（28%），已通过 DeepSeek 大模型完成工单自动派发并闭环。\n\nAI 调度效益：\n大模型 DeepSeek-V2.5 累计下发智能调度指令 14,200 次，路线优化算法使清扫车队平均碳排放下降 14%。相比传统人工巡检模式，响应时间由 2 小时缩短至 15 分钟内，综合治理成本显著降低。\n\n决策建议：\n预计明日有降雨，建议预先调配【滨海大道】无人机编队进行低空内涝隐患排查，提升防汛响应等级。`;
+            
+            setTimeout(() => { typeWriter(reportText, reportBox, 20); }, 500);
+        }
+
+        // ================= AR 驾驶舱全屏及菜单交互 =================
+        function toggleARFullscreen() {
+            const container = document.getElementById('ar-view-container');
+            const wrapper1 = document.getElementById('ar-wrapper');
+            const page2 = document.getElementById('page-2');
+            const fsIcon = document.getElementById('fs-icon');
+            
+            isARFullscreen = !isARFullscreen;
+
+            if (isARFullscreen) {
+                // 移到 page-2 全屏展示
+                page2.appendChild(container);
+                container.classList.add('ar-fullscreen-mode');
+                switchPage('page-2');
+                // 图标变为缩小箭头
+                fsIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3"></path>`;
+            } else {
+                // 移回 page-1 正常展示
+                wrapper1.appendChild(container);
+                container.classList.remove('ar-fullscreen-mode');
+                switchPage('page-1');
+                // 图标变为放大箭头
+                fsIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>`;
+            }
+            setTimeout(resizeAR, 100);
+        }
+
+        function toggleARDropdown(e) {
+            if (e) e.stopPropagation();
+            const dropdown = document.getElementById('ar-dropdown');
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                dropdown.classList.add('grid');
+            } else {
+                dropdown.classList.remove('grid');
+            }
+        }
+
+        // 点击空白处关闭 AR 下拉菜单
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('ar-dropdown');
+            const isClickInside = dropdown.contains(event.target);
+            const isClickButton = event.target.closest('button[onclick="toggleARDropdown(event)"]');
+            
+            if (!isClickInside && !isClickButton && !dropdown.classList.contains('hidden')) {
+                dropdown.classList.add('hidden');
+                dropdown.classList.remove('grid');
+            }
+        });
+
+        // ================= AR 驾驶舱模拟动画 =================
+        const arCanvas = document.getElementById('ar-canvas');
+        const arCtx = arCanvas.getContext('2d');
+        let boxes = [];
+        let currentARDevice = 0;
+        const arDevices = [
+            { id: 0, name: "[ 巡检车-A 视角接入中 ]", type: "YOLOv5-Edge Active", speed: "Speed: 45 km/h", coords: "LAT:39.9 LNG:116.3", color: "#39ff14", horizon: 0.4, speedMultiplier: 10, hudColor: "text-neon-green" },
+            { id: 1, name: "[ 苍穹-无人机 空中俯视 ]", type: "Drone-Vision v2.1", speed: "ALT: 120m | SPD: 60km/h", coords: "LAT:39.8 LNG:116.4", color: "#00f3ff", horizon: 0.7, speedMultiplier: 18, hudColor: "text-cyan-400" },
+            { id: 2, name: "[ 网格员-AR单兵眼镜 ]", type: "Mobile-Net v3", speed: "Walking: 5 km/h", coords: "LAT:40.0 LNG:116.2", color: "#ffcc00", horizon: 0.3, speedMultiplier: 2, hudColor: "text-warn-yellow" }
+        ];
+
+        function switchARDevice(idx) {
+            currentARDevice = idx; const dev = arDevices[idx];
+            for(let i=0; i<3; i++) {
+                const btn = document.getElementById(`ar-btn-${i}`);
+                btn.className = i === idx ? "text-[9px] px-1.5 py-0.5 border border-cyan-500 bg-cyan-900/80 text-white transition-colors" : "text-[9px] px-1.5 py-0.5 border border-gray-600 bg-black/50 text-gray-400 hover:text-cyan-300 transition-colors";
+            }
+            document.getElementById('ar-type').innerText = dev.type;
+            document.getElementById('ar-speed').innerText = dev.speed;
+            document.getElementById('ar-coords').innerText = dev.coords;
+            document.getElementById('ar-device-name').innerText = dev.name;
+            document.getElementById('ar-hud-text').className = `absolute top-2 left-2 text-[10px] ${dev.hudColor} font-tech drop-shadow-md hud-scale-text transition-transform`;
+            boxes = []; arCtx.fillStyle = 'rgba(255,255,255,0.8)'; arCtx.fillRect(0,0,arCanvas.width, arCanvas.height);
+        }
+
+        function resizeAR() { arCanvas.width = arCanvas.clientWidth; arCanvas.height = arCanvas.clientHeight; }
+        window.addEventListener('resize', resizeAR); resizeAR();
+
+        function drawARScene() {
+            const dev = arDevices[currentARDevice];
+            arCtx.fillStyle = '#01050a'; arCtx.fillRect(0, 0, arCanvas.width, arCanvas.height);
+            arCtx.strokeStyle = 'rgba(0, 243, 255, 0.15)'; arCtx.lineWidth = 2;
+            const centerX = arCanvas.width / 2; const horizonY = arCanvas.height * dev.horizon;
+            arCtx.beginPath(); arCtx.moveTo(centerX, horizonY); arCtx.lineTo(0, arCanvas.height);
+            arCtx.moveTo(centerX, horizonY); arCtx.lineTo(arCanvas.width, arCanvas.height); arCtx.stroke();
+            
+            const time = Date.now() * 0.005;
+            arCtx.strokeStyle = `rgba(${dev.color === '#00f3ff' ? '0,243,255' : (dev.color === '#ffcc00' ? '255,204,0' : '57,255,20')}, 0.4)`; 
+            arCtx.setLineDash([20, 40]); arCtx.lineDashOffset = -time * dev.speedMultiplier;
+            arCtx.beginPath(); arCtx.moveTo(centerX, horizonY); arCtx.lineTo(centerX, arCanvas.height); arCtx.stroke();
+            arCtx.setLineDash([]);
+
+            boxes.forEach((box, index) => {
+                box.z -= (0.005 * dev.speedMultiplier);
+                if (box.z <= 0) { boxes.splice(index, 1); } else {
+                    const scale = 1 / box.z; const x = centerX + box.x * scale; const y = horizonY + box.y * scale;
+                    const w = box.w * scale; const h = box.h * scale;
+                    if (y > horizonY && scale > 0.1) {
+                        const boxColor = box.color === '#ff3366' ? '#ff3366' : dev.color;
+                        arCtx.strokeStyle = boxColor; arCtx.lineWidth = 2; arCtx.strokeRect(x - w/2, y - h, w, h);
+                        const len = w * 0.2; arCtx.beginPath(); arCtx.moveTo(x - w/2, y - h + len); arCtx.lineTo(x - w/2, y - h); arCtx.lineTo(x - w/2 + len, y - h); arCtx.stroke();
+                        arCtx.fillStyle = boxColor; arCtx.font = '10px Orbitron'; 
+                        if(isARFullscreen) { arCtx.font = '16px Orbitron'; }
+                        arCtx.fillText(`${box.label} ${(1/box.z).toFixed(1)}m`, x - w/2, y - h - 5);
+                    }
+                }
+            });
+            
+            if (Math.random() < 0.02) {
+                boxes.push({ x: (Math.random() - 0.5) * 200, y: 100, z: 5, w: 40 + Math.random()*20, h: 40 + Math.random()*20, label: ['纸片', '异常', '抛洒物'][Math.floor(Math.random()*3)], color: dev.color });
+            }
+            requestAnimationFrame(drawARScene);
+        }
+        drawARScene();
+
+
+        // ================= 彻底替换回：纯 ECharts GeoJSON 发光矢量地图 =================
+        let mapChart = null; let p3Chart = null; let p4Chart = null;
+        const chaoyangCenter = [116.52, 39.92];
+        const bjutCenter = [116.4812, 39.8756];
+        const workerCenter = [116.4935, 39.8912];
+        let demoStage = 'idle';
+
+        // 极具科幻感的 GEO 配置预设
+        const baseGeoConfig = {
+            map: 'chaoyang', roam: true, zoom: 1.08, center: chaoyangCenter,
+            label: { show: false },
+            itemStyle: {
+                areaColor: 'rgba(2, 16, 36, 0.6)', 
+                borderColor: '#0b3d51', borderWidth: 1.5,
+                shadowColor: 'rgba(0, 243, 255, 0.4)', shadowBlur: 10
+            },
+            emphasis: {
+                itemStyle: { areaColor: 'rgba(0, 243, 255, 0.2)' },
+                label: { show: true, color: '#fff' }
+            }
+        };
+
+        // 感知模式数据：红色病害点
+        const redPointsData = [];
+        
+        // 感知模式数据：高频北斗采样呼吸点
+        const greenDotsData = [];
+        for (let i = 0; i < 100; i++) {
+            greenDotsData.push({
+                value: [chaoyangCenter[0] + (Math.random() - 0.5) * 0.35, chaoyangCenter[1] + (Math.random() - 0.5) * 0.32]
+            });
+        }
+
+        // 热力图数据
+        const heatData = [];
+        for (let i = 0; i < 180; i++) { heatData.push([chaoyangCenter[0] + (Math.random() - 0.5) * 0.35, chaoyangCenter[1] + (Math.random() - 0.5) * 0.32, Math.random() * 10]); }
+
+        // AI 派单推演底图特效数据
+        const dispatchTargetPoints = [];
+        const dispatchFlyLines = [{ coords: [workerCenter, bjutCenter] }];
+
+        const mapOptions = {
+            // 模式 1：态势感知
+            sense: {
+                geo: baseGeoConfig,
+                tooltip: {
+                    trigger: 'item', renderMode: 'html', backgroundColor: 'transparent', borderColor: 'transparent', padding: 0,
+                    formatter: function(params) {
+                        if(params.seriesId === 'bjut-demo-event') {
+                            return `
+                            <div style="width:240px; background:rgba(20,30,50,0.95); border:1px solid #00f3ff; color:#fff; border-radius:4px; box-shadow:0 4px 15px rgba(0,243,255,0.4); overflow:hidden; font-family:sans-serif;">
+                                <div style="background:rgba(0,243,255,0.2); border-bottom:1px solid #00f3ff; padding:8px 12px; font-weight:bold; font-size:14px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="color:#00f3ff;">北京工业大学事件点</span>
+                                    <span style="color:${params.color};">●</span>
+                                </div>
+                                <div style="padding:12px; font-size:12px; line-height:1.9; color:#ccc;">
+                                    <div><strong style="color:#00f3ff;">事件:</strong> 道路抛洒物</div>
+                                    <div><strong style="color:#00f3ff;">位置:</strong> 北京工业大学平乐园校区</div>
+                                    <div><strong style="color:#00f3ff;">置信度:</strong> 96%</div>
+                                    <div><strong style="color:#00f3ff;">北斗坐标:</strong> 39.8756°N, 116.4812°E</div>
+                                </div>
+                            </div>`;
+                        }
+                    }
+                },
+                series: [
+                    {
+                        name: '北斗算力扫描节点',
+                        type: 'effectScatter', coordinateSystem: 'geo', data: greenDotsData,
+                        symbolSize: 3, itemStyle: { color: '#39ff14' },
+                        effect: { show: true, brushType: 'stroke', scale: 4, period: 4 }, zlevel: 1
+                    },
+                    {
+                        name: '病害告警',
+                        type: 'scatter', coordinateSystem: 'geo', data: redPointsData,
+                        symbol: 'pin', symbolSize: 18, itemStyle: { color: '#ff3366', shadowBlur: 15, shadowColor: '#ff3366' }, zlevel: 2
+                    },
+                    {
+                        id: 'bjut-demo-event', name: '北京工业大学事件', type: 'effectScatter', coordinateSystem: 'geo', data: [],
+                        symbol: 'pin', symbolSize: 38, showEffectOn: 'render',
+                        rippleEffect: { scale: 3.2, brushType: 'stroke', period: 2 },
+                        label: { show: true, position: 'right', formatter: '北京工业大学', color: '#fff', fontWeight: 'bold' },
+                        itemStyle: { color: '#ff3366', shadowBlur: 28, shadowColor: '#ff3366' }, zlevel: 8
+                    }
+                ]
+            },
+            // 模式 2：热力图
+            heat: {
+                geo: baseGeoConfig,
+                visualMap: { show: false, min: 0, max: 10, inRange: { color: ['#021024', '#00f3ff', '#39ff14', '#ffcc00', '#ff3366'] } },
+                series: [{ name: '病害热力', type: 'heatmap', coordinateSystem: 'geo', data: heatData, pointSize: 12, blurSize: 15 }]
+            },
+            // 模式 3：AI 派单推演
+            dispatch: {
+                geo: baseGeoConfig,
+                series: [
+                    {
+                        name: '待处理病害区域 (推演点)',
+                        type: 'scatter', coordinateSystem: 'geo', 
+                        data: dispatchTargetPoints,
+                        symbol: 'pin', symbolSize: 20, itemStyle: { color: '#ff3366', shadowBlur: 10, shadowColor: '#ff3366' }, zlevel: 2
+                    },
+                    {
+                        name: '环卫人员03',
+                        type: 'effectScatter', coordinateSystem: 'geo',
+                        data: [{ name: '环卫人员03', value: workerCenter }],
+                        symbolSize: 20, itemStyle: { color: '#00f3ff', shadowBlur: 20, shadowColor: '#00f3ff' }, zlevel: 3
+                    },
+                    {
+                        name: 'DeepSeek 推演派发流线',
+                        type: 'lines', coordinateSystem: 'geo', zlevel: 4,
+                        effect: { show: true, period: 4, trailLength: 0.1, symbol: 'arrow', symbolSize: 6, color: '#39ff14' },
+                        lineStyle: { color: '#00f3ff', width: 2, opacity: 0.4, curveness: 0.2 },
+                        data: dispatchFlyLines
+                    },
+                    {
+                        id: 'bjut-demo-event', name: '北京工业大学事件', type: 'effectScatter', coordinateSystem: 'geo', data: [],
+                        symbol: 'pin', symbolSize: 38, showEffectOn: 'render',
+                        rippleEffect: { scale: 3.2, brushType: 'stroke', period: 2 },
+                        label: { show: true, position: 'right', formatter: '北京工业大学', color: '#fff', fontWeight: 'bold' },
+                        itemStyle: { color: '#ff3366', shadowBlur: 28, shadowColor: '#ff3366' }, zlevel: 8
+                    }
+                ]
+            }
+        };
+
+        function initMainMap() {
+            mapChart = echarts.init(document.getElementById('main-echarts-map'));
+            mapChart.setOption(mapOptions.sense);
+            window.addEventListener('resize', () => { if(mapChart) mapChart.resize(); });
+        }
+
+        function switchMapMode(mode) {
+            ['sense', 'heat', 'dispatch'].forEach(m => {
+                const tab = document.getElementById('tab-' + m);
+                if (m === mode) { tab.classList.add('active-tab'); } else { tab.classList.remove('active-tab'); }
+            });
+            if (mapChart) { 
+                mapChart.clear(); 
+                mapChart.setOption(mapOptions[mode], true); 
+                if (mode !== 'heat') refreshDemoEventPoint();
+            }
+        }
+
+        function demoStageColor(stage) {
+            if (stage === 'completed') return '#39ff14';
+            if (stage === 'accepted' || stage === 'dispatched') return '#ffcc00';
+            return '#ff3366';
+        }
+
+        function refreshDemoEventPoint() {
+            if (!mapChart) return;
+            const color = demoStageColor(demoStage);
+            mapChart.setOption({ series: [{
+                id: 'bjut-demo-event',
+                data: demoStage === 'idle' ? [] : [{ name: '北京工业大学', value: [...bjutCenter, 96] }],
+                itemStyle: { color, shadowBlur: 28, shadowColor: color },
+                rippleEffect: { scale: demoStage === 'completed' ? 2 : 3.2, brushType: 'stroke', period: demoStage === 'completed' ? 4 : 2 }
+            }] });
+        }
+
+        // ================= 月度处理统计图 =================
+        const costChart = echarts.init(document.getElementById('cost-chart'));
+        costChart.setOption({
+            // 原位复刻了截图要求的 Tooltip 结构
+            tooltip: { 
+                trigger: 'axis', 
+                backgroundColor: 'rgba(4,16,35,0.95)', 
+                borderColor: '#00f3ff', 
+                borderWidth: 1,
+                borderRadius: 6,
+                padding: [12, 16],
+                textStyle: { color: '#fff' },
+                formatter: function (params) {
+                    let html = `<div style="font-weight:bold; font-size:16px; margin-bottom:10px; color:#fff; font-family:sans-serif;">${params[0].name}</div>`;
+                    params.forEach(param => {
+                        html += `
+                            <div style="display:flex; justify-content:space-between; align-items:center; width: 160px; margin-bottom: 8px; font-family:sans-serif;">
+                                <div style="display:flex; align-items:center;">
+                                    <span style="display:inline-block; margin-right:8px; border-radius:50%; width:10px; height:10px; background-color:${param.color}; box-shadow: 0 0 5px ${param.color}"></span>
+                                    <span style="color:#eee; font-size:14px;">${param.seriesName}</span>
+                                </div>
+                                <span style="font-weight:bold; font-size:16px; color:#fff; font-family:'Orbitron', sans-serif;">${param.value}</span>
+                            </div>`;
+                    });
+                    return html;
+                }
+            },
+            legend: { data: ['发现病害量', '已处理量', '自动闭环量'], textStyle: { color: '#aaa', fontSize: 10 }, top: 0 },
+            grid: { left: '10%', right: '5%', bottom: '15%', top: '25%' },
+            xAxis: { 
+                type: 'category', boundaryGap: false,
+                data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'], 
+                axisLabel: { color: '#888', fontSize: 10 } 
+            },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(0,243,255,0.1)' } }, axisLabel: { color: '#888', fontSize: 10 } },
+            series: [
+                { 
+                    name: '发现病害量', type: 'line', smooth: true, data: [450, 420, 560, 400, 580, 520, 460, 480, 500, 410, 350, 300], 
+                    itemStyle: { color: '#ff3366' }, areaStyle: { color: 'rgba(255,51,102,0.1)' },
+                    label: { show: false },
+                    emphasis: { focus: 'series', label: { show: true, position: 'top', formatter: '{c}', color: '#fff', backgroundColor: 'rgba(255,51,102,0.8)', padding: [4, 6], borderRadius: 4, fontSize: 12, fontWeight: 'bold' } }
+                },
+                { 
+                    name: '已处理量', type: 'line', smooth: true, data: [380, 390, 500, 350, 510, 480, 420, 450, 460, 380, 310, 270], 
+                    itemStyle: { color: '#39ff14' },
+                    label: { show: false },
+                    emphasis: { focus: 'series', label: { show: true, position: 'top', formatter: '{c}', color: '#fff', backgroundColor: 'rgba(57,255,20,0.8)', padding: [4, 6], borderRadius: 4, fontSize: 12, fontWeight: 'bold' } }
+                },
+                { 
+                    name: '自动闭环量', type: 'line', smooth: true, data: [150, 180, 240, 200, 310, 350, 300, 340, 360, 300, 250, 220], 
+                    itemStyle: { color: '#00f3ff' }, areaStyle: { color: 'rgba(0,243,255,0.1)' },
+                    label: { show: false },
+                    emphasis: { focus: 'series', label: { show: true, position: 'top', formatter: '{c}', color: '#fff', backgroundColor: 'rgba(0,243,255,0.8)', padding: [4, 6], borderRadius: 4, fontSize: 12, fontWeight: 'bold' } }
+                }
+            ]
+        });
+
+        // ================= 饼图 =================
+        const pieChart = echarts.init(document.getElementById('pie-chart'));
+        pieChart.setOption({
+            // 同样重写了结构复刻截图效果
+            tooltip: { 
+                trigger: 'item', 
+                backgroundColor: 'rgba(4,16,35,0.95)', 
+                borderColor: '#00f3ff', 
+                borderWidth: 1,
+                borderRadius: 6,
+                padding: [12, 16],
+                textStyle: { color: '#fff' },
+                formatter: function (params) {
+                    return `
+                        <div style="font-weight:normal; font-size:14px; margin-bottom:10px; color:#ddd; font-family:sans-serif;">病害类型</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; width: 150px; font-family:sans-serif;">
+                            <div style="display:flex; align-items:center;">
+                                <span style="display:inline-block; margin-right:8px; border-radius:50%; width:10px; height:10px; background-color:${params.color}; box-shadow: 0 0 5px ${params.color}"></span>
+                                <span style="color:#fff; font-size:14px;">${params.name}</span>
+                            </div>
+                            <span style="font-weight:bold; font-size:16px; color:#fff; font-family:'Orbitron', sans-serif;">${params.value}</span>
+                        </div>
+                    `;
+                }
+            }, 
+            color: ['#00f3ff', '#39ff14', '#ff3366', '#f6e58d', '#e056fd'],
+            series: [{
+                name: '病害类型', type: 'pie', radius: ['30%', '55%'], center: ['50%', '50%'], itemStyle: { borderRadius: 3, borderColor: '#010811', borderWidth: 2 },
+                label: { show: true, color: '#fff', fontSize: 10 },
+                data: [ { value: 1048, name: '白色垃圾' }, { value: 735, name: '路面裂缝' }, { value: 580, name: '违章占道' }, { value: 484, name: '绿化破损' }, { value: 300, name: '大件抛洒物' } ]
+            }]
+        });
+
+        // 绑定窗口变化事件重新计算宽高
+        window.addEventListener('resize', () => { 
+            setTimeout(() => {
+                if(costChart) costChart.resize(); 
+                if(pieChart) pieChart.resize(); 
+                if(radarChartInstance) radarChartInstance.resize();
+            }, 100);
+        });
+
+
+        // ================= 事件流 =================
+        const eventList = document.getElementById('event-list');
+        let issueCount = 125811;
+        
+        const fixedEvents = [
+            { street: '科创大道', type: '发现大件建筑废弃物', img: './' + localImages[0], isEmergency: true },
+            { street: '滨海大道', type: '绿化带漂浮物聚集', img: './' + localImages[1], isEmergency: false },
+            { street: '大学城南路', type: '违规停放共享单车堆积', img: './' + localImages[2], isEmergency: false },
+            { street: '朝阳路', type: '路面突发大面积积水', img: './' + localImages[3], isEmergency: true },
+            { street: '高新六路', type: '非机动车道塑料垃圾', img: './' + localImages[4], isEmergency: false },
+            { street: '软件园中路', type: '路面沥青破损/坑洼', img: './' + localImages[5], isEmergency: false },
+            { street: '创新大道', type: '井盖缺失异常告警', img: './' + localImages[6], isEmergency: false },
+            { street: '香山路', type: '满溢垃圾桶未及时清理', img: './' + localImages[7], isEmergency: false },
+            { street: '海秀快速路', type: '交通护栏严重损坏', img: './' + localImages[8], isEmergency: true },
+            { street: '云谷路', type: '违规占道经营摆摊', img: './' + localImages[9], isEmergency: false },
+            { street: '望海大道', type: '运输车辆散落渣土', img: './' + localImages[10], isEmergency: false },
+            { street: '建设一路', type: '不明遗弃纸箱群', img: './' + localImages[11], isEmergency: false }
+        ];
+        let currentEventIndex = 0;
+
+        function addEvent(isManualEmergency = false, customText = '') {
+            const li = document.createElement('li');
+            const time = new Date().toLocaleTimeString('en-US', {hour12:false});
+            let street, type, imgUrl, isEmg;
+            
+            if(isManualEmergency) {
+                street = '科创大道'; type = customText; imgUrl = './' + localImages[Math.floor(Math.random() * localImages.length)]; isEmg = true;
+                issueCount += 1; document.getElementById('total-issues').innerText = issueCount.toLocaleString();
+            } else {
+                const evt = fixedEvents[currentEventIndex];
+                street = evt.street; type = evt.type; imgUrl = evt.img; isEmg = evt.isEmergency || false;
+                currentEventIndex = (currentEventIndex + 1) % fixedEvents.length;
+            }
+            
+            li.onclick = () => openDrawer('event-detail-modal', street, type, imgUrl, isEmg);
+            li.className = isEmg 
+                ? 'flex justify-between p-2 rounded bg-red-900/40 border-l-2 border-red-500 font-bold hover-list-item'
+                : 'flex justify-between p-2 rounded bg-cyan-900/10 border-l-2 border-cyan-800 opacity-80 hover-list-item hover:opacity-100';
+            
+            if(isEmg) { li.innerHTML = `<span class="text-red-400">⚠️ ${time}</span> <span class="text-white">${type}</span> <span class="text-red-400">告警</span>`; } 
+            else { li.innerHTML = `<span class="text-cyan-600">${time}</span> <span class="text-gray-300">${street} ${type}</span> <span class="text-green-400">已闭环</span>`; }
+            eventList.prepend(li);
+            if(eventList.children.length > 20) eventList.removeChild(eventList.lastChild);
+        }
+        addEvent(); addEvent(); addEvent();
+        setInterval(() => { if (demoStage === 'idle') addEvent(); }, 9000);
+
+        // ================= DeepSeek-R1 大模型逻辑 =================
+        const chatBox = document.getElementById('ai-chat-box');
+
+        function typeWriter(text, element, speed = 30) {
+            let i = 0; element.innerHTML = '';
+            const cursor = document.createElement('span'); cursor.className = 'cursor-blink bg-cyan-400 w-2 h-4 inline-block align-middle ml-1';
+            return new Promise(resolve => {
+                function type() {
+                    if (i < text.length) {
+                        let char = text.charAt(i);
+                        if (char === '\n') { element.insertBefore(document.createElement('br'), cursor); } 
+                        else { element.insertBefore(document.createTextNode(char), cursor); }
+                        i++; chatBox.scrollTop = chatBox.scrollHeight;
+                        const reportBox = document.getElementById('report-content');
+                        if(reportBox) reportBox.scrollTop = reportBox.scrollHeight;
+                        setTimeout(type, speed);
+                    } else { cursor.remove(); resolve(); }
+                }
+                element.appendChild(cursor); type();
+            });
+        }
+
+        async function fetchDispatchInstruction() {
+            return "【多模态感知】发现多个大件抛洒物节点，置信度0.98，阻碍路段。\n【路网推演】结合微气候气象数据，多路段处于早高峰前夕，交通延误指数0.6。\n【DeepSeek 策略】已就近匹配3辆[重型清扫车]，自动规划3条直角转折避堵路网。\n【全局最优】方案已生成，请核对或下达修改指令。";
+        }
+
+        function triggerEmergencyDemo() {
+            window.dispatchEvent(new CustomEvent('qingdaofu-command', { detail: 'detected' }));
+        }
+
+        let demoEventSeqRendered = 0;
+        let aiRunSeq = 0;
+        let completedSeq = 0;
+        let lastStageNote = '';
+
+        function demoStageLabel(stage) {
+            return {
+                detected: '待处理', analyzing: 'AI研判中', dispatched: '待接单',
+                accepted: '处理中', completed: '已完成'
+            }[stage] || '系统待命';
+        }
+
+        function updateDemoDrawer(room) {
+            document.getElementById('detail-id').innerText = `BJUT-${String(room.eventSeq || 1).padStart(3, '0')}`;
+            document.getElementById('detail-loc').innerText = '北京工业大学平乐园校区道路';
+            document.getElementById('detail-desc').innerText = '道路抛洒物';
+            document.getElementById('detail-confidence').innerText = '96%';
+            document.getElementById('detail-time').innerText = new Date(room.eventTime || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
+            const statusEl = document.getElementById('detail-status');
+            statusEl.innerText = demoStageLabel(room.stage);
+            statusEl.className = room.stage === 'completed' ? 'text-neon-green font-bold'
+                : (room.stage === 'accepted' || room.stage === 'dispatched') ? 'text-warn-yellow font-bold'
+                : 'text-red-400 font-bold';
+        }
+
+        function addDemoEvent(room) {
+            const li = document.createElement('li');
+            li.id = 'bjut-demo-event-row';
+            li.onclick = () => document.getElementById('event-detail-modal').classList.remove('translate-x-full');
+            li.className = 'flex justify-between p-2 rounded bg-red-900/40 border-l-2 border-red-500 font-bold hover-list-item';
+            const time = new Date(room.eventTime || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
+            li.innerHTML = `<span class="text-red-400">⚠️ ${time}</span><span class="text-white">北京工业大学 · 道路抛洒物</span><span id="bjut-demo-event-status" class="text-red-400">待处理</span>`;
+            eventList.prepend(li);
+        }
+
+        function appendStageNote(stage, text, tone = 'text-cyan-300') {
+            if (lastStageNote === stage) return;
+            lastStageNote = stage;
+            const note = document.createElement('div');
+            note.className = `mt-2 border-l-2 border-cyan-500 pl-2 bg-cyan-900/20 p-2 rounded ${tone} text-xs`;
+            note.innerText = text;
+            chatBox.appendChild(note);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function runDemoAnalysis(room) {
+            if (aiRunSeq === room.eventSeq) return;
+            aiRunSeq = room.eventSeq;
+            chatBox.innerHTML = '';
+            const start = document.createElement('div');
+            start.className = 'mb-3';
+            start.innerHTML = '<span class="text-red-400 font-bold">[边缘节点告警]</span> 北京工业大学检测到道路抛洒物<br><span class="text-cyan-400 mt-1 inline-block font-tech">>> DeepSeek-R1 正在进行多维时空联合推演...</span>';
+            chatBox.appendChild(start);
+            const reply = document.createElement('div');
+            reply.className = 'border-l-2 border-cyan-500 pl-2 bg-blue-900/30 p-2 rounded text-cyan-50 text-xs leading-relaxed';
+            chatBox.appendChild(reply);
+            const text = '【事件解析】识别为道路纸类与塑料抛洒物，置信度 96%。\n【北斗校核】事件锚定北京工业大学平乐园校区，定位精度 1.6 m。\n【环境评估】当前无降水，周边道路交通状态正常。\n【风险研判】事件等级：轻度，无需临时交通管制。\n【资源匹配】推荐执行：环卫人员03，距离事件点 1.2 km。\n【路线规划】北工大西门 → 平乐园路 → 事件点。\n【调度结论】方案已生成，准备下发现场作业端。';
+            await typeWriter(text, reply, 22);
+        }
+
+        window.qingdaofuSetConnection = function(mode, connected) {
+            const status = document.getElementById('sync-status');
+            status.innerText = mode === 'cloudbase' && connected ? '三端云端联动' : '云端环境待配置';
+            status.className = mode === 'cloudbase' && connected
+                ? 'absolute left-6 bottom-1 z-20 text-[10px] text-neon-green border border-green-700/60 bg-green-900/20 px-2 py-0.5 rounded font-tech'
+                : 'absolute left-6 bottom-1 z-20 text-[10px] text-yellow-300 border border-yellow-700/60 bg-yellow-900/20 px-2 py-0.5 rounded font-tech';
+        };
+
+        window.qingdaofuApplyState = function(room) {
+            demoStage = room.stage || 'idle';
+            if (demoStage === 'idle') {
+                closeDrawer('event-detail-modal');
+                document.getElementById('bjut-demo-event-row')?.remove();
+                chatBox.innerHTML = '<div class="text-gray-400 italic mb-2 font-tech">DeepSeek-R1 Standby. 等待边缘节点数据汇入...</div>';
+                demoEventSeqRendered = 0; aiRunSeq = 0; lastStageNote = '';
+                switchMapMode('sense');
+                return;
+            }
+
+            if (demoEventSeqRendered !== room.eventSeq) {
+                document.getElementById('bjut-demo-event-row')?.remove();
+                addDemoEvent(room);
+                demoEventSeqRendered = room.eventSeq;
+            }
+            updateDemoDrawer(room);
+            document.getElementById('event-detail-modal').classList.remove('translate-x-full');
+            const eventStatus = document.getElementById('bjut-demo-event-status');
+            if (eventStatus) {
+                eventStatus.innerText = demoStageLabel(demoStage);
+                eventStatus.className = demoStage === 'completed' ? 'text-neon-green'
+                    : (demoStage === 'accepted' || demoStage === 'dispatched') ? 'text-warn-yellow' : 'text-red-400';
+            }
+
+            if (demoStage === 'analyzing') {
+                switchMapMode('dispatch');
+                runDemoAnalysis(room);
+            } else if (demoStage === 'dispatched') {
+                switchMapMode('dispatch');
+                appendStageNote('dispatched', '✔ 智能工单已下发至环卫人员03，等待现场接单。', 'text-neon-green');
+            } else if (demoStage === 'accepted') {
+                switchMapMode('sense');
+                appendStageNote('accepted', '● 环卫人员03已接单，事件进入处理中。', 'text-warn-yellow');
+            } else if (demoStage === 'completed') {
+                switchMapMode('sense');
+                appendStageNote('completed', '✔ 现场处置完成，事件已进入闭环归档。', 'text-neon-green');
+                if (completedSeq !== room.eventSeq) {
+                    completedSeq = room.eventSeq;
+                    issueCount += 1;
+                    document.getElementById('total-issues').innerText = issueCount.toLocaleString();
+                }
+            } else {
+                switchMapMode('sense');
+                chatBox.innerHTML = '<div class="text-red-400 font-bold">[边缘节点告警] 北京工业大学检测到道路抛洒物</div><div class="text-cyan-400 mt-2 font-tech">>> 事件已建档，正在启动智能研判...</div>';
+            }
+            refreshDemoEventPoint();
+        };
+
+        async function sendUserMessage() {
+            const input = document.getElementById('user-ai-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            input.value = ''; // 清空输入框
+            
+            // 渲染用户输入消息气泡（右侧对齐）
+            const userDiv = document.createElement('div');
+            userDiv.className = 'mb-3 flex justify-end mt-2';
+            userDiv.innerHTML = `<div class="bg-cyan-900/40 border border-cyan-700/50 rounded-lg px-3 py-2 text-cyan-100 max-w-[85%] text-xs shadow-[0_0_10px_rgba(0,243,255,0.1)] leading-relaxed break-words">${text}</div>`;
+            chatBox.appendChild(userDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 渲染 AI 回复消息气泡（固定写好的文本）
+            const aiReplyDiv = document.createElement('div'); 
+            aiReplyDiv.className = 'border-l-2 border-neon-green pl-2 bg-green-900/20 p-2 rounded text-green-300 transition-colors mt-2 text-xs leading-relaxed';
+            chatBox.appendChild(aiReplyDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const aiResponseText = "【意图解析】已提取您的优化指令。\n【方案重组】DeepSeek-R1 已重新收敛全局参数，完成排班路线与调度节点调整。当前修正方案已就绪，各项指标均达最优解。\n【操作引导】请确认无误后，点击下方「确定」按钮下发工单，启动现场闭环作业。";
+            
+            await typeWriter(aiResponseText, aiReplyDiv, 30);
+        }
+
+        function confirmDispatch() {
+            window.dispatchEvent(new CustomEvent('qingdaofu-command', { detail: 'dispatched' }));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropdown = document.getElementById('ar-dropdown');
+            for(let i=4; i<=100; i++) {
+                const num = String(i).padStart(3, '0');
+                const btn = document.createElement('button');
+                btn.className = "text-[9px] px-1 py-0.5 border border-cyan-900/50 bg-black/60 text-cyan-800 cursor-not-allowed hover:bg-cyan-900 transition-colors";
+                btn.innerText = num;
+                btn.onclick = () => { return false; };
+                dropdown.appendChild(btn);
+            }
+        });
+
+        // ================= 第3、4页：行政区地图获取及初始化 =================
+        Promise.all([
+            fetch('./maps/chaoyang.json').then(res => res.json()),
+            fetch('./maps/beijing.json').then(res => res.json())
+        ])
+            .then(([chaoyangGeoJson, beijingGeoJson]) => {
+                echarts.registerMap('chaoyang', chaoyangGeoJson);
+                echarts.registerMap('beijing', beijingGeoJson);
+                
+                const loaders = document.querySelectorAll('.map-loading-overlay');
+                loaders.forEach(el => el.style.display = 'none');
+
+                initMainMap();
+                initPage3Map(beijingGeoJson);
+                initPage4Map(beijingGeoJson);
+            })
+            .catch(err => {
+                console.error("区域地图加载失败", err);
+                const loaders = document.querySelectorAll('.map-loading-overlay');
+                loaders.forEach(el => el.innerHTML = '<span class="text-red-500">地图数据获取失败，请检查网络。</span>');
+            });
+
+        function initPage3Map(geoJson) {
+            p3Chart = echarts.init(document.getElementById('page3-map'));
+            const districtData = geoJson.features.map(f => ({
+                name: f.properties.name,
+                value: Math.floor(Math.random() * 200),
+                total: Math.floor(Math.random() * 500 + 100),
+                cars: Math.floor(Math.random() * 50 + 10)
+            }));
+            p3Chart.setOption({
+                tooltip: {
+                    trigger: 'item', backgroundColor: 'rgba(4,16,35,0.9)', borderColor: '#00f3ff', textStyle: {color: '#fff'},
+                    formatter: function(p) {
+                        if(!p.data) return p.name;
+                        return `<div style="padding:4px; font-family:sans-serif;">
+                                    <div style="font-size:16px; font-weight:bold; color:#00f3ff; border-bottom:1px solid #00f3ff; padding-bottom:4px; margin-bottom:8px;">${p.name} 综合作业态势</div>
+                                    <div>辖区发现病害: <span style="color:#ff3366">${p.data.total}</span> 件</div>
+                                    <div>已完成闭环: <span style="color:#39ff14">${p.data.value}</span> 件</div>
+                                    <div>活跃巡检终端: <span style="color:#ffcc00">${p.data.cars}</span> 台</div>
+                                </div>`;
+                    }
+                },
+                visualMap: { show: false, min: 0, max: 200, inRange: { color: ['rgba(0,243,255,0.1)', 'rgba(0,243,255,0.6)'] } },
+                series: [{
+                    type: 'map', map: 'beijing', roam: true, zoom: 1.1,
+                    label: { show: true, color: '#fff', fontSize: 10 },
+                    itemStyle: { borderColor: '#00f3ff', borderWidth: 1 },
+                    emphasis: { itemStyle: { areaColor: '#39ff14' }, label: { color: '#000', fontWeight: 'bold' } },
+                    data: districtData
+                }]
+            });
+        }
+
+        function initPage4Map(geoJson) {
+            p4Chart = echarts.init(document.getElementById('page4-map'));
+            const weatherTypes = ['晴朗', '多云', '大风', '大雨'];
+            const weatherColors = {'晴朗': '#2ecc71', '多云': '#3498db', '大风': '#f1c40f', '大雨': '#e74c3c'};
+            
+            const wData = geoJson.features.map(f => {
+                const wt = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+                return {
+                    name: f.properties.name,
+                    weather: wt,
+                    temp: Math.floor(Math.random() * 15 + 10) + '°C',
+                    hum: Math.floor(Math.random() * 50 + 30) + '%',
+                    wind: Math.floor(Math.random() * 5 + 1) + ' 级',
+                    pm: Math.floor(Math.random() * 100 + 20),
+                    fric: (Math.random() * 0.5 + 0.3).toFixed(2), 
+                    itemStyle: { areaColor: weatherColors[wt], opacity: 0.6 }
+                };
+            });
+
+            p4Chart.setOption({
+                tooltip: {
+                    trigger: 'item', backgroundColor: 'rgba(4,16,35,0.9)', borderColor: '#00f3ff', textStyle: {color: '#fff'},
+                    formatter: function(p) {
+                        if(!p.data) return p.name;
+                        return `<div style="padding:4px; font-family:sans-serif;">
+                                    <div style="font-size:16px; font-weight:bold; color:${p.data.itemStyle.areaColor}; border-bottom:1px solid ${p.data.itemStyle.areaColor}; padding-bottom:4px; margin-bottom:8px;">${p.name} · 微气候评估</div>
+                                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px 16px;">
+                                        <div>综合天气: ${p.data.weather}</div>
+                                        <div>地表温度: <span style="color:#ffcc00">${p.data.temp}</span></div>
+                                        <div>相对湿度: ${p.data.hum}</div>
+                                        <div>实时风力: ${p.data.wind}</div>
+                                        <div>PM 2.5: ${p.data.pm}</div>
+                                        <div>路面摩擦系数: <span style="color:#ff3366">${p.data.fric}</span></div>
+                                    </div>
+                                    <div style="margin-top:8px; font-size:10px; color:#aaa;">* DeepSeek 模型已根据该区路面摩擦系数调整巡检车车速预值</div>
+                                </div>`;
+                    }
+                },
+                series: [{
+                    type: 'map', map: 'beijing', roam: true, zoom: 1.1,
+                    label: { show: true, color: '#fff', fontSize: 10, textBorderColor: '#000', textBorderWidth: 2 },
+                    itemStyle: { borderColor: '#fff', borderWidth: 0.5 },
+                    emphasis: { itemStyle: { opacity: 1 }, label: { color: '#fff' } },
+                    data: wData
+                }]
+            });
+        }
+    </script>
+    <script type="module" src="/src/dashboard-sync.js"></script>
+</body>
+</html>

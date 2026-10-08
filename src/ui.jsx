@@ -41,9 +41,9 @@ export function useRelay(session) {
 }
 
 export function ConnectionPill({ room, compact = false }) {
-  const cloud = room.relay?.mode === 'cloud';
+  const cloud = room.relay?.mode === 'cloudbase';
   return <span className={`connection-pill ${room.relay?.connected ? 'online' : ''} ${compact ? 'compact' : ''}`} title={room.relay?.warning || ''}>
-    <span className="pulse-dot"/><Icon name="cloud"/>{cloud ? '云端联机' : '本机联调'}
+    <span className="pulse-dot"/><Icon name="cloud"/>{cloud ? '云端联机' : '通道待配置'}
   </span>;
 }
 

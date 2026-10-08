@@ -15,6 +15,16 @@ export default defineConfig({
       }
     },
   }],
+  resolve: { preserveSymlinks: true },
   worker: { format: 'es' },
-  build: { target: 'es2022' },
+  build: {
+    target: 'es2022',
+    rollupOptions: {
+      input: {
+        main: resolve('index.html'),
+        dashboard: resolve('dashboard.html'),
+        detector: resolve('detector.html'),
+      },
+    },
+  },
 });

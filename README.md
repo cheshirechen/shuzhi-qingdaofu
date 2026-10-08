@@ -2,11 +2,13 @@
 
 一个网址包含三个端口，通过同一房间码联动：
 
-- `?view=dashboard&session=ICAN2026`：电脑指挥大屏
-- `?view=detector&session=ICAN2026`：手机边缘识别端
+- `dashboard.html?session=ICAN2026`：电脑指挥大屏（沿用原智慧城管大屏）
+- `detector.html?session=ICAN2026`：手机边缘识别端（沿用原识别网页）
 - `?view=worker&session=ICAN2026`：清洁工作业端
 
 完整流程：待命 → 发现事件 → AI 研判 → 已派单 → 处理中 → 已完成。
+
+电脑端地图固定为北京市朝阳区，演示事件锚定北京工业大学。三端只传递流程状态，不上传识别画面、识别内容或定位数据；电脑事件侧栏也不显示现场照片。
 
 ## 本地运行
 
@@ -19,20 +21,21 @@ npm run dev
 
 ## 跨设备同步
 
-项目未配置云端时使用“本机联调”，可在同一浏览器的多个标签页中测试。比赛现场三台设备联动需启用 Firebase Realtime Database：
+项目未配置云端时使用浏览器本机联调，可在同一浏览器的多个标签页中完整测试。比赛现场三台设备使用各自移动数据即可，无需连接同一热点；跨设备联动使用腾讯云 CloudBase：
 
-1. 创建 Firebase 项目和 Web 应用。
-2. 在 Authentication 中启用“匿名”登录。
-3. 创建 Realtime Database。
-4. 将 `firebase.rules.json` 内的规则发布到该数据库。
-5. 把 Web API Key 和 Database URL 填入 `src/realtime-config.js`。
-6. 重新构建发布。页面右上角显示“云端联机”后，三端即可跨设备同步。
+1. 在腾讯云 CloudBase 创建环境，并记下环境 ID。
+2. 在“身份认证 / 登录设置”中启用匿名登录。
+3. 创建云数据库集合 `demo_rooms`。
+4. 为比赛演示配置“已登录用户可读写”的安全规则；可参考 `cloudbase.rules.example.json`。
+5. 在 Web 安全域名中加入 `cheshirechen.github.io`。
+6. 将环境 ID 和 Web 端可发布密钥填入 `src/realtime-config.js`。
+7. 重新构建发布。三个端口显示“云端联机”后即可跨设备同步。
 
-只同步 `stage` 、房间码和时间戳等状态信号；不上传相机画面、识别类别、置信度、图片或定位内容。
+SDK 已作为项目依赖写入代码，无需在电脑或手机上另行下载。只同步 `stage`、房间码和时间戳等状态信号；不上传相机画面、识别类别、置信度、图片或定位内容。
 
 ## GitHub Pages
 
-建议新建仓库 `shuzhi-qingdaofu`，不重命名旧仓库 `codex_practice`，这样旧网址会继续可用。项目已包含 GitHub Pages Actions，构建路径会跟随仓库名。
+项目已包含 GitHub Pages 自动发布流程，推送到 `main` 后会自动构建。
 
 ```text
 https://cheshirechen.github.io/shuzhi-qingdaofu/
