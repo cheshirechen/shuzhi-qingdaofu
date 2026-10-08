@@ -341,7 +341,7 @@
                 <div class="hud-box flex-[1_1_35%] min-h-0 flex flex-col p-3">
                     <div class="hud-box-inner w-full h-full absolute inset-0 pointer-events-none"></div>
                     <h2 class="text-cyan-400 font-bold mb-2 z-10 text-sm flex justify-between shrink-0 border-b border-cyan-900/50 pb-2">
-                        实时异常事件池 <span class="text-xs text-gray-500 font-normal">点击条目查看现场</span>
+                        异常事件池 <span class="text-xs text-gray-500 font-normal">仅现场新事件实时新增</span>
                     </h2>
                     <div class="flex-1 overflow-hidden z-10 relative">
                         <div class="absolute bottom-0 w-full h-8 bg-gradient-to-t from-[rgba(4,16,35,0.9)] to-transparent z-10 pointer-events-none"></div>
@@ -806,7 +806,8 @@
         let mapChart = null; let p3Chart = null; let p4Chart = null;
         const chaoyangCenter = [116.52, 39.92];
         const bjutCenter = [116.4812, 39.8756];
-        const workerCenter = [116.4935, 39.8912];
+        // 比赛现场两台手机位于同一张桌面：坐标按亚米级同点位设置，显示时仅做图标错位避免完全遮挡。
+        const workerCenter = [116.481203, 39.875602];
         let demoStage = 'idle';
         let appliedDemoStage = null;
 
@@ -917,7 +918,8 @@
                         name: '环卫人员03',
                         type: 'effectScatter', coordinateSystem: 'geo',
                         data: [{ name: '环卫人员03', value: workerCenter }],
-                        symbolSize: 20, itemStyle: { color: '#00f3ff', shadowBlur: 20, shadowColor: '#00f3ff' }, zlevel: 3
+                        symbolSize: 20, symbolOffset: [-28, -18],
+                        itemStyle: { color: '#00f3ff', shadowBlur: 20, shadowColor: '#00f3ff' }, zlevel: 3
                     },
                     {
                         name: 'DeepSeek 推演派发流线',
@@ -1076,48 +1078,41 @@
         const eventList = document.getElementById('event-list');
         let issueCount = 125811;
         
-        const fixedEvents = [
-            { street: '科创大道', type: '发现大件建筑废弃物', img: './' + localImages[0], isEmergency: true },
-            { street: '滨海大道', type: '绿化带漂浮物聚集', img: './' + localImages[1], isEmergency: false },
-            { street: '大学城南路', type: '违规停放共享单车堆积', img: './' + localImages[2], isEmergency: false },
-            { street: '朝阳路', type: '路面突发大面积积水', img: './' + localImages[3], isEmergency: true },
-            { street: '高新六路', type: '非机动车道塑料垃圾', img: './' + localImages[4], isEmergency: false },
-            { street: '软件园中路', type: '路面沥青破损/坑洼', img: './' + localImages[5], isEmergency: false },
-            { street: '创新大道', type: '井盖缺失异常告警', img: './' + localImages[6], isEmergency: false },
-            { street: '香山路', type: '满溢垃圾桶未及时清理', img: './' + localImages[7], isEmergency: false },
-            { street: '海秀快速路', type: '交通护栏严重损坏', img: './' + localImages[8], isEmergency: true },
-            { street: '云谷路', type: '违规占道经营摆摊', img: './' + localImages[9], isEmergency: false },
-            { street: '望海大道', type: '运输车辆散落渣土', img: './' + localImages[10], isEmergency: false },
-            { street: '建设一路', type: '不明遗弃纸箱群', img: './' + localImages[11], isEmergency: false }
+        const historicalEvents = [
+            { daysAgo: 1, hour: 16, minute: 42, street: '滨海大道', type: '绿化带漂浮物聚集' },
+            { daysAgo: 1, hour: 10, minute: 18, street: '大学城南路', type: '违规停放共享单车堆积' },
+            { daysAgo: 2, hour: 17, minute: 36, street: '高新六路', type: '非机动车道塑料垃圾' },
+            { daysAgo: 2, hour: 9, minute: 25, street: '朝阳路', type: '路面积水处置' },
+            { daysAgo: 3, hour: 14, minute: 8, street: '软件园中路', type: '路面沥青破损修复' },
+            { daysAgo: 4, hour: 11, minute: 53, street: '创新大道', type: '井盖异常复核' },
+            { daysAgo: 5, hour: 18, minute: 20, street: '香山路', type: '满溢垃圾桶清运' },
+            { daysAgo: 6, hour: 13, minute: 47, street: '海秀快速路', type: '交通护栏修复' },
+            { daysAgo: 7, hour: 9, minute: 32, street: '云谷路', type: '占道经营处置' },
+            { daysAgo: 7, hour: 8, minute: 5, street: '望海大道', type: '散落渣土清理' }
         ];
-        let currentEventIndex = 0;
 
-        function addEvent(isManualEmergency = false, customText = '') {
-            const li = document.createElement('li');
-            const time = new Date().toLocaleTimeString('en-US', {hour12:false});
-            let street, type, imgUrl, isEmg;
-            
-            if(isManualEmergency) {
-                street = '科创大道'; type = customText; imgUrl = './' + localImages[Math.floor(Math.random() * localImages.length)]; isEmg = true;
-                issueCount += 1; document.getElementById('total-issues').innerText = issueCount.toLocaleString();
-            } else {
-                const evt = fixedEvents[currentEventIndex];
-                street = evt.street; type = evt.type; imgUrl = evt.img; isEmg = evt.isEmergency || false;
-                currentEventIndex = (currentEventIndex + 1) % fixedEvents.length;
-            }
-            
-            li.onclick = () => openDrawer('event-detail-modal', street, type, imgUrl, isEmg);
-            li.className = isEmg 
-                ? 'flex justify-between p-2 rounded bg-red-900/40 border-l-2 border-red-500 font-bold hover-list-item'
-                : 'flex justify-between p-2 rounded bg-cyan-900/10 border-l-2 border-cyan-800 opacity-80 hover-list-item hover:opacity-100';
-            
-            if(isEmg) { li.innerHTML = `<span class="text-red-400">⚠️ ${time}</span> <span class="text-white">${type}</span> <span class="text-red-400">告警</span>`; } 
-            else { li.innerHTML = `<span class="text-cyan-600">${time}</span> <span class="text-gray-300">${street} ${type}</span> <span class="text-green-400">已闭环</span>`; }
-            eventList.prepend(li);
-            if(eventList.children.length > 20) eventList.removeChild(eventList.lastChild);
+        function historicalTime(item) {
+            const date = new Date();
+            date.setDate(date.getDate() - item.daysAgo);
+            date.setHours(item.hour, item.minute, 0, 0);
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hour = String(date.getHours()).padStart(2, '0');
+            const minute = String(date.getMinutes()).padStart(2, '0');
+            return { date, label: `${month}-${day} ${hour}:${minute}` };
         }
-        addEvent(); addEvent(); addEvent();
-        setInterval(() => { if (demoStage === 'idle') addEvent(); }, 9000);
+
+        function addHistoricalEvent(item, index) {
+            const li = document.createElement('li');
+            const time = historicalTime(item);
+            li.dataset.eventKind = 'historical';
+            li.dataset.eventTime = String(time.date.getTime());
+            li.onclick = () => openDrawer('event-detail-modal', item.street, item.type, './' + localImages[index % localImages.length], false);
+            li.className = 'grid grid-cols-[76px_1fr_42px] gap-2 items-center p-2 rounded bg-cyan-900/10 border-l-2 border-cyan-800 opacity-80 hover-list-item hover:opacity-100';
+            li.innerHTML = `<span class="text-cyan-600 whitespace-nowrap text-[11px]">${time.label}</span><span class="text-gray-300 truncate" title="${item.street} ${item.type}">${item.street} ${item.type}</span><span class="text-green-400 text-right whitespace-nowrap">已闭环</span>`;
+            eventList.appendChild(li);
+        }
+        historicalEvents.forEach(addHistoricalEvent);
 
         // ================= DeepSeek-R1 大模型逻辑 =================
         const chatBox = document.getElementById('ai-chat-box');
@@ -1177,10 +1172,12 @@
         function addDemoEvent(room) {
             const li = document.createElement('li');
             li.id = 'bjut-demo-event-row';
+            li.dataset.eventKind = 'live';
+            li.dataset.eventTime = String(room.eventTime || Date.now());
             li.onclick = () => document.getElementById('event-detail-modal').classList.remove('translate-x-full');
-            li.className = 'flex justify-between p-2 rounded bg-red-900/40 border-l-2 border-red-500 font-bold hover-list-item';
+            li.className = 'grid grid-cols-[76px_1fr_42px] gap-2 items-center p-2 rounded bg-red-900/40 border-l-2 border-red-500 font-bold hover-list-item';
             const time = new Date(room.eventTime || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
-            li.innerHTML = `<span class="text-red-400">⚠️ ${time}</span><span class="text-white">北京工业大学 · 道路抛洒物</span><span id="bjut-demo-event-status" class="text-red-400">待处理</span>`;
+            li.innerHTML = `<span class="text-red-400 whitespace-nowrap text-[11px]">⚠️ ${time}</span><span class="text-white truncate">北京工业大学 · 道路抛洒物</span><span id="bjut-demo-event-status" class="text-red-400 text-right whitespace-nowrap">待处理</span>`;
             eventList.prepend(li);
         }
 
@@ -1205,7 +1202,7 @@
             const reply = document.createElement('div');
             reply.className = 'border-l-2 border-cyan-500 pl-2 bg-blue-900/30 p-2 rounded text-cyan-50 text-xs leading-relaxed';
             chatBox.appendChild(reply);
-            const text = '【事件解析】识别为道路纸类与塑料抛洒物，置信度 96%。\n【北斗校核】事件锚定北京工业大学平乐园校区，定位精度 1.6 m。\n【环境评估】当前无降水，周边道路交通状态正常。\n【风险研判】事件等级：轻度，无需临时交通管制。\n【资源匹配】推荐执行：环卫人员03，距离事件点 1.2 km。\n【路线规划】北工大西门 → 平乐园路 → 事件点。\n【调度结论】方案已生成，准备下发现场作业端。';
+            const text = '【事件解析】识别为道路纸类与塑料抛洒物，置信度 96%。\n【北斗校核】事件锚定北京工业大学平乐园校区，定位精度 1.6 m。\n【环境评估】当前无降水，周边道路交通状态正常。\n【风险研判】事件等级：轻度，无需临时交通管制。\n【资源匹配】推荐执行：环卫人员03，与事件点处于同一现场点位（<1 m）。\n【路线规划】现场作业端 → 事件点。\n【调度结论】方案已生成，准备下发现场作业端。';
             await typeWriter(text, reply, 22);
         }
 

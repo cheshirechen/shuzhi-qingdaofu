@@ -17,17 +17,17 @@ export const EVENT = {
   shortLocation: '国际文化交流中心北侧',
   address: '北京市朝阳区平乐园100号',
   risk: '一般',
-  distance: '1.2 km',
+  distance: '< 1 m',
   worker: '环卫人员03',
-  route: '北工大西门 → 平乐园路 → 事件点',
+  route: '现场作业端 → 事件点',
   image: 'samples/demo-cardboard.jpg',
 };
 
 export const AI_STEPS = [
   { key: 'perception', tag: '多模态感知', title: '事件特征解析', text: '识别为路面纸类与塑料抛洒物，未占用主车道。', value: '96%' },
   { key: 'context', tag: '时空推演', title: '环境与交通评估', text: '当前无降水，校园北侧路段通行正常，无需交通管制。', value: '轻度' },
-  { key: 'resource', tag: '资源匹配', title: '作业单元检索', text: '环卫人员03当前空闲，与事件点路网距离最短。', value: '1.2 km' },
-  { key: 'route', tag: '全局优化', title: '生成执行方案', text: '建议派发环卫人员03，绕开主入口人流，预计5分钟到达。', value: '方案 A' },
+  { key: 'resource', tag: '资源匹配', title: '作业单元检索', text: '环卫人员03当前空闲，与事件点处于同一现场点位。', value: '< 1 m' },
+  { key: 'route', tag: '全局优化', title: '生成执行方案', text: '建议就地派发环卫人员03，现场可立即响应。', value: '方案 A' },
 ];
 
 export function freshRoom(session = DEMO_SESSION) {

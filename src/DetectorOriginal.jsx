@@ -52,10 +52,11 @@ function App() {
   useEffect(() => {
     const relay = new DemoRelay(session, next => {
       roomRef.current = next;
-      if (next.stage === 'idle') {
-        sentRef.current = false;
+      const eventInProgress = next.stage !== 'idle';
+      sentRef.current = eventInProgress;
+      setSent(eventInProgress);
+      if (!eventInProgress) {
         streakRef.current = 0;
-        setSent(false);
       }
     });
     relayRef.current = relay;
@@ -262,7 +263,7 @@ function App() {
         <input id="confidence" type="range" min="0.1" max="0.9" step="0.05" value={threshold} onChange={e=>{const value=Number(e.target.value);thresholdRef.current=value;setThreshold(value);}} onPointerUp={()=>{if(mode==='photo'&&ready&&!processing)inferPhoto();}} onKeyUp={()=>{if(mode==='photo'&&ready&&!processing)inferPhoto();}}/>
         <p className="hint">门槛越高，显示越谨慎；分数不代表整体准确率。</p>
         <details><summary>性能与离线设置</summary><label className="field-label" htmlFor="backend">运行方式</label><select id="backend" value={backend} disabled={loading||processing} onChange={e=>loadModel(size,e.target.value)}><option value="wasm">兼容模式（默认）</option><option value="webgpu">尝试设备加速（不支持时自动回退）</option></select><p className="hint">切换设置会停止相机。加速效果需在当前设备实测。</p><button className="text-button" onClick={checkCache}>检查离线准备情况</button><p className="hint">{cacheStatus}</p><p className="hint">Safari：分享 → 添加到主屏幕。缓存被系统清理后，需要联网重新加载。</p></details>
-        <details><summary>现场演示保障</summary><p className="hint">识别稳定后会自动通知指挥中心；现场需要时可手动补发一次事件信号。</p><button className="secondary" disabled={sent} onClick={() => sendDetection(true)}>{sent?'事件已发送':'手动发送事件信号'}</button><p className="hint">房间码：{session}</p></details>
+        <details><summary>现场演示保障</summary><p className="hint">识别稳定后会自动通知指挥中心。每轮只发送一次；完成后在电脑端按 R 重置，按钮即可恢复。</p><button className="secondary" disabled={sent} onClick={() => sendDetection(true)}>{sent?'本轮事件已发送':'手动发送事件信号'}</button><p className="hint">房间码：{session}</p></details>
         <div className="section-title"><h2>检测结果</h2><button className="text-button" onClick={saveFrame} disabled={!timing}><Icon name="save"/>保存画面</button></div>
         {boxes.length?<ul className="detections">{boxes.map((box,i)=><li key={i}><span className="category-dot" style={{background:COLORS[box.label]}}/><span>{CLASS_NAMES[box.label]}</span><strong>{Math.round(box.score*100)}%</strong></li>)}</ul>:<p className="no-results">{timing?'未发现达到门槛的目标，可调整距离或阈值再试。':'识别后在这里查看类别与置信度。'}</p>}
         {sampleList.length>0&&<div className="samples"><h3>先试一张示例</h3><div>{sampleList.slice(0,3).map(s=><button key={s.url} disabled={!ready||loading||processing} onClick={()=>openPhoto(s.url)}><img src={s.url} alt={s.title}/><span>{s.title}</span></button>)}</div></div>}
