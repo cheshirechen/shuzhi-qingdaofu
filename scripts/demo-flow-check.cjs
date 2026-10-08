@@ -4,8 +4,11 @@ const fs = require('node:fs');
 
 (async () => {
   const base = process.env.TEST_URL || 'http://localhost:4173/shuzhi-qingdaofu/';
+  const expectCloud = process.env.EXPECT_CLOUD === '1';
   const browser = await chromium.launch({ headless: true, channel: 'msedge' });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const dashboardContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const detectorContext = expectCloud ? await browser.newContext({ viewport: { width: 390, height: 844 } }) : dashboardContext;
+  const workerContext = expectCloud ? await browser.newContext({ viewport: { width: 390, height: 844 } }) : dashboardContext;
   const errors = [];
   const browserLogs = [];
   const track = page => {
@@ -20,9 +23,9 @@ const fs = require('node:fs');
       browserLogs.push(`${page.url()}: ${message.type()}: ${details.join(' ')}`);
     });
   };
-  const dashboard = await context.newPage(); track(dashboard);
-  const detector = await context.newPage(); track(detector);
-  const worker = await context.newPage(); track(worker);
+  const dashboard = await dashboardContext.newPage(); track(dashboard);
+  const detector = await detectorContext.newPage(); track(detector);
+  const worker = await workerContext.newPage(); track(worker);
 
   const readMapView = page => page.evaluate(() => {
     const element = document.querySelector('#main-echarts-map');
@@ -39,9 +42,9 @@ const fs = require('node:fs');
     await dashboard.waitForFunction(() => !('serviceWorker' in navigator) || Boolean(navigator.serviceWorker.controller));
     await dashboard.reload({ waitUntil: 'domcontentloaded' });
     await dashboard.waitForFunction(() => typeof window.qingdaofuApplyState === 'function', null, { timeout: 30000 });
-    if (process.env.EXPECT_CLOUD === '1') {
+    if (expectCloud) {
       await dashboard.waitForFunction(
-        () => document.body.innerText.includes('云端联机'),
+        () => document.body.innerText.includes('三端云端联动'),
         null,
         { timeout: 30000 },
       );
@@ -64,12 +67,18 @@ const fs = require('node:fs');
 
     await detector.setViewportSize({ width: 390, height: 844 });
     await detector.goto(`${base}detector.html?session=ICAN2026`, { waitUntil: 'domcontentloaded' });
+    if (expectCloud) {
+      await detector.waitForFunction(() => document.body.innerText.includes('云端联动'), null, { timeout: 30000 });
+    }
     await detector.getByRole('button', { name: '开启相机', exact: true }).waitFor({ state: 'visible' });
     await detector.waitForFunction(() => [...document.querySelectorAll('button')].some(button => button.textContent === '开启相机' && !button.disabled), null, { timeout: 180000 });
     assert.match(await detector.locator('header').innerText(), /手机垃圾识别/);
 
     await worker.setViewportSize({ width: 390, height: 844 });
     await worker.goto(`${base}?view=worker&session=ICAN2026`, { waitUntil: 'domcontentloaded' });
+    if (expectCloud) {
+      await worker.waitForFunction(() => document.body.innerText.includes('云端联机'), null, { timeout: 30000 });
+    }
     await worker.getByRole('button', { name: '进入待命' }).click();
     await worker.getByText('正在等待新任务').waitFor();
 
@@ -90,7 +99,7 @@ const fs = require('node:fs');
     await detector.screenshot({ path: 'validation/original-detector.png', fullPage: true });
     await worker.screenshot({ path: 'validation/worker-completed.png', fullPage: true });
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, checks: ['three-map-presets', 'all-maps-remain-interactive', 'chaoyang-map-rendered', 'drawer-has-no-photo', 'detector-ready', 'dispatch-received', 'accepted', 'completed'] }, null, 2));
+    console.log(JSON.stringify({ passed: true, checks: [expectCloud ? 'three-isolated-cloud-clients' : 'browser-local-relay', 'three-map-presets', 'all-maps-remain-interactive', 'chaoyang-map-rendered', 'drawer-has-no-photo', 'detector-ready', 'dispatch-received', 'accepted', 'completed'] }, null, 2));
   } catch (error) {
     console.error(error.stack);
     if (errors.length) console.error(errors.join('\n'));
