@@ -50,7 +50,7 @@ export class DemoRelay {
       if (login?.error) throw new Error(login.error.message || 'CloudBase 匿名登录失败');
 
       const db = app.database();
-      this.cloudDocument = db.collection('demo_rooms').doc(this.session);
+      this.cloudDocument = db.collection('demo_sessions').doc(this.session);
       const initial = await this.cloudDocument.get();
       const initialRoom = snapshotRoom(initial);
       if (initialRoom) this.accept(initialRoom);

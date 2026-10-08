@@ -810,9 +810,17 @@
         const workerCenter = [116.4935, 39.8912];
         let demoStage = 'idle';
 
-        // 极具科幻感的 GEO 配置预设
-        const baseGeoConfig = {
-            map: 'chaoyang', roam: true, zoom: 1.08, center: chaoyangCenter,
+        // 三个演示模式各自保留独立的初始视野；roam 保持滚轮缩放与拖动能力。
+        const mapViewPresets = {
+            sense: { center: [116.52, 39.92], zoom: 1.08 },
+            heat: { center: [116.52, 39.92], zoom: 1.52 },
+            dispatch: { center: [116.49, 39.89], zoom: 1.62 }
+        };
+
+        const geoConfig = mode => ({
+            map: 'chaoyang', roam: true,
+            zoom: mapViewPresets[mode].zoom,
+            center: mapViewPresets[mode].center,
             label: { show: false },
             itemStyle: {
                 areaColor: 'rgba(2, 16, 36, 0.6)', 
@@ -823,7 +831,7 @@
                 itemStyle: { areaColor: 'rgba(0, 243, 255, 0.2)' },
                 label: { show: true, color: '#fff' }
             }
-        };
+        });
 
         // 感知模式数据：红色病害点
         const redPointsData = [];
@@ -847,7 +855,7 @@
         const mapOptions = {
             // 模式 1：态势感知
             sense: {
-                geo: baseGeoConfig,
+                geo: geoConfig('sense'),
                 tooltip: {
                     trigger: 'item', renderMode: 'html', backgroundColor: 'transparent', borderColor: 'transparent', padding: 0,
                     formatter: function(params) {
@@ -891,13 +899,13 @@
             },
             // 模式 2：热力图
             heat: {
-                geo: baseGeoConfig,
+                geo: geoConfig('heat'),
                 visualMap: { show: false, min: 0, max: 10, inRange: { color: ['#021024', '#00f3ff', '#39ff14', '#ffcc00', '#ff3366'] } },
                 series: [{ name: '病害热力', type: 'heatmap', coordinateSystem: 'geo', data: heatData, pointSize: 12, blurSize: 15 }]
             },
             // 模式 3：AI 派单推演
             dispatch: {
-                geo: baseGeoConfig,
+                geo: geoConfig('dispatch'),
                 series: [
                     {
                         name: '待处理病害区域 (推演点)',
