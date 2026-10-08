@@ -809,6 +809,7 @@
         const bjutCenter = [116.4812, 39.8756];
         const workerCenter = [116.4935, 39.8912];
         let demoStage = 'idle';
+        let appliedDemoStage = null;
 
         // 三个演示模式各自保留独立的初始视野；roam 保持滚轮缩放与拖动能力。
         const mapViewPresets = {
@@ -1219,12 +1220,16 @@
 
         window.qingdaofuApplyState = function(room) {
             demoStage = room.stage || 'idle';
+            const stageChanged = demoStage !== appliedDemoStage;
             if (demoStage === 'idle') {
-                closeDrawer('event-detail-modal');
-                document.getElementById('bjut-demo-event-row')?.remove();
-                chatBox.innerHTML = '<div class="text-gray-400 italic mb-2 font-tech">DeepSeek-R1 Standby. 等待边缘节点数据汇入...</div>';
-                demoEventSeqRendered = 0; aiRunSeq = 0; lastStageNote = '';
-                switchMapMode('sense');
+                if (stageChanged) {
+                    closeDrawer('event-detail-modal');
+                    document.getElementById('bjut-demo-event-row')?.remove();
+                    chatBox.innerHTML = '<div class="text-gray-400 italic mb-2 font-tech">DeepSeek-R1 Standby. 等待边缘节点数据汇入...</div>';
+                    demoEventSeqRendered = 0; aiRunSeq = 0; lastStageNote = '';
+                    switchMapMode('sense');
+                }
+                appliedDemoStage = demoStage;
                 return;
             }
 
@@ -1243,16 +1248,16 @@
             }
 
             if (demoStage === 'analyzing') {
-                switchMapMode('dispatch');
+                if (stageChanged) switchMapMode('dispatch');
                 runDemoAnalysis(room);
             } else if (demoStage === 'dispatched') {
-                switchMapMode('dispatch');
+                if (stageChanged) switchMapMode('dispatch');
                 appendStageNote('dispatched', '✔ 智能工单已下发至环卫人员03，等待现场接单。', 'text-neon-green');
             } else if (demoStage === 'accepted') {
-                switchMapMode('sense');
+                if (stageChanged) switchMapMode('sense');
                 appendStageNote('accepted', '● 环卫人员03已接单，事件进入处理中。', 'text-warn-yellow');
             } else if (demoStage === 'completed') {
-                switchMapMode('sense');
+                if (stageChanged) switchMapMode('sense');
                 appendStageNote('completed', '✔ 现场处置完成，事件已进入闭环归档。', 'text-neon-green');
                 if (completedSeq !== room.eventSeq) {
                     completedSeq = room.eventSeq;
@@ -1260,10 +1265,11 @@
                     document.getElementById('total-issues').innerText = issueCount.toLocaleString();
                 }
             } else {
-                switchMapMode('sense');
+                if (stageChanged) switchMapMode('sense');
                 chatBox.innerHTML = '<div class="text-red-400 font-bold">[边缘节点告警] 北京工业大学检测到道路抛洒物</div><div class="text-cyan-400 mt-2 font-tech">>> 事件已建档，正在启动智能研判...</div>';
             }
             refreshDemoEventPoint();
+            appliedDemoStage = demoStage;
         };
 
         async function sendUserMessage() {

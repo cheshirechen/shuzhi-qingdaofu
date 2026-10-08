@@ -33,6 +33,11 @@ const fs = require('node:fs');
     const geo = chart?.getOption()?.geo?.[0] || {};
     return { zoom: Number(geo.zoom), center: geo.center, roam: geo.roam };
   });
+  const waitForMapZoom = (page, expected) => page.waitForFunction(value => {
+    const element = document.querySelector('#main-echarts-map');
+    const chart = window.echarts?.getInstanceByDom(element);
+    return Number(chart?.getOption()?.geo?.[0]?.zoom) === value;
+  }, expected, { timeout: 10000 });
 
   try {
     await dashboard.goto(`${base}dashboard.html?session=ICAN2026`, { waitUntil: 'domcontentloaded' });
@@ -56,14 +61,17 @@ const fs = require('node:fs');
     assert.equal(senseView.zoom, 1.08, 'sense map must use its medium initial view');
     assert.equal(senseView.roam, true, 'sense map must remain zoomable and draggable');
     await dashboard.locator('#tab-heat').click();
+    await waitForMapZoom(dashboard, 1.52);
     const heatView = await readMapView(dashboard);
     assert.equal(heatView.zoom, 1.52, 'heat map must use its closer initial view');
     assert.equal(heatView.roam, true, 'heat map must remain zoomable and draggable');
     await dashboard.locator('#tab-dispatch').click();
+    await waitForMapZoom(dashboard, 1.62);
     const dispatchView = await readMapView(dashboard);
     assert.equal(dispatchView.zoom, 1.62, 'dispatch map must focus on the BJUT area');
     assert.equal(dispatchView.roam, true, 'dispatch map must remain zoomable and draggable');
     await dashboard.locator('#tab-sense').click();
+    await waitForMapZoom(dashboard, 1.08);
 
     await detector.setViewportSize({ width: 390, height: 844 });
     await detector.goto(`${base}detector.html?session=ICAN2026`, { waitUntil: 'domcontentloaded' });
