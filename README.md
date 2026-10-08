@@ -28,8 +28,8 @@ npm run dev
 3. 创建云数据库集合 `demo_rooms`。
 4. 为比赛演示配置“已登录用户可读写”的安全规则；可参考 `cloudbase.rules.example.json`。
 5. 在 Web 安全域名中加入 `cheshirechen.github.io`。
-6. 将环境 ID 和 Web 端可发布密钥填入 `src/realtime-config.js`。
-7. 重新构建发布。三个端口显示“云端联机”后即可跨设备同步。
+6. 在 GitHub 仓库 `Settings → Secrets and variables → Actions` 中新建两个 Repository secret：`CLOUDBASE_ENV_ID` 和 `CLOUDBASE_PUBLISHABLE_KEY`。
+7. 在 Actions 中重新运行 Pages 工作流。三个端口显示“云端联机”后即可跨设备同步；不需要再修改源码。
 
 SDK 已作为项目依赖写入代码，无需在电脑或手机上另行下载。只同步 `stage`、房间码和时间戳等状态信号；不上传相机画面、识别类别、置信度、图片或定位内容。
 

@@ -22,6 +22,8 @@ jobs:
       - run: npm run build
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_CLOUDBASE_ENV_ID: ${{ secrets.CLOUDBASE_ENV_ID }}
+          VITE_CLOUDBASE_PUBLISHABLE_KEY: ${{ secrets.CLOUDBASE_PUBLISHABLE_KEY }}
       - uses: actions/configure-pages@v5
         with:
           enablement: true
