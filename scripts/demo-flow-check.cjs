@@ -7,7 +7,19 @@ const fs = require('node:fs');
   const browser = await chromium.launch({ headless: true, channel: 'msedge' });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const errors = [];
-  const track = page => page.on('pageerror', error => errors.push(`${page.url()}: ${error.message}`));
+  const browserLogs = [];
+  const track = page => {
+    page.on('pageerror', error => errors.push(`${page.url()}: ${error.message}`));
+    page.on('console', async message => {
+      if (!['warning', 'error'].includes(message.type())) return;
+      const details = [];
+      for (const argument of message.args()) {
+        try { details.push(JSON.stringify(await argument.jsonValue())); }
+        catch { details.push(argument.toString()); }
+      }
+      browserLogs.push(`${page.url()}: ${message.type()}: ${details.join(' ')}`);
+    });
+  };
   const dashboard = await context.newPage(); track(dashboard);
   const detector = await context.newPage(); track(detector);
   const worker = await context.newPage(); track(worker);
@@ -82,6 +94,7 @@ const fs = require('node:fs');
   } catch (error) {
     console.error(error.stack);
     if (errors.length) console.error(errors.join('\n'));
+    if (browserLogs.length) console.error(browserLogs.join('\n'));
     process.exitCode = 1;
   } finally {
     await browser.close();
