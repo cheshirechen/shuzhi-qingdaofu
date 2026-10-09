@@ -161,10 +161,14 @@ const fs = require('node:fs');
     await worker.getByRole('button', { name: '完成' }).click();
     await dashboard.waitForFunction(() => [...document.querySelectorAll('#event-list [data-event-kind="live"]')].some(row => row.textContent.includes('已完成')));
     assert.equal(await dashboard.locator('#event-detail-modal').evaluate(node => node.classList.contains('translate-x-full')), true, 'complete must not reopen drawer');
+    await worker.getByRole('button', { name: '返回待命' }).click();
+    await worker.getByText('正在等待新任务').waitFor();
+    assert.equal(await dashboard.locator('#event-list [data-event-kind="live"]').count(), 1, 'returning worker to standby must preserve dashboard history');
 
     await detector.getByRole('button', { name: '手动发送当前识别结果' }).click();
     await dashboard.waitForFunction(() => document.querySelectorAll('#event-list [data-event-kind="live"]').length === 2);
     assert.equal(await dashboard.locator('#event-list [data-event-kind="live"]').count(), 2, 'completed live events must remain when another round starts');
+    await worker.getByText('新任务').waitFor({ timeout: 20000 });
 
     await dashboard.screenshot({ path: 'validation/original-dashboard-flow.png', fullPage: true });
     await detector.screenshot({ path: 'validation/original-detector.png', fullPage: true });

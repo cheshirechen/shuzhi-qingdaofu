@@ -9,6 +9,8 @@ import './detector-original.css';
 import './detector-integration.css';
 
 const VERSION = '1.0.0';
+const EVENT_TRIGGER_STREAK = 2;
+const EVENT_COLLECTION_MS = 1200;
 const session = normalizeSession(new URLSearchParams(window.location.search).get('session') || DEMO_SESSION);
 const baseUrl = import.meta.env.BASE_URL;
 function Icon({name, ...props}) {
@@ -187,7 +189,7 @@ function App() {
       processedFrame.current.getContext('2d').drawImage(frame.current,0,0);
       drawBoxes(overlay.current,width,height,result.boxes);
       resultsRef.current=result.boxes;savedResults.current=result.boxes;setBoxes(result.boxes);setTiming({inferenceMs:result.inferenceMs,totalMs});
-      const targetDetections = result.boxes.filter(box => MODEL_LABEL_TO_EVENT[box.label] && box.score >= Math.max(.45, thresholdRef.current));
+      const targetDetections = result.boxes.filter(box => MODEL_LABEL_TO_EVENT[box.label] && box.score >= thresholdRef.current);
       const hasConfidentTarget = targetDetections.length > 0;
       streakRef.current = hasConfidentTarget ? streakRef.current + 1 : 0;
       if (hasConfidentTarget) {
@@ -200,12 +202,12 @@ function App() {
         if (!sentRef.current && !awaitingClearRef.current && modeRef.current === 'photo') {
           const batch = [...collectionRef.current.values()]; collectionRef.current.clear();
           sendDetection(false, batch);
-        } else if (!sentRef.current && !awaitingClearRef.current && streakRef.current >= 3 && !collectionTimerRef.current) {
+        } else if (!sentRef.current && !awaitingClearRef.current && streakRef.current >= EVENT_TRIGGER_STREAK && !collectionTimerRef.current) {
           setStatus('目标已锁定 · 正在汇集本轮垃圾类型');
           collectionTimerRef.current = setTimeout(() => {
             const batch = [...collectionRef.current.values()]; collectionRef.current.clear(); collectionTimerRef.current = null;
             sendDetection(false, batch);
-          }, 2200);
+          }, EVENT_COLLECTION_MS);
         }
       } else {
         clearFramesRef.current += 1;
@@ -216,7 +218,14 @@ function App() {
       }
       samples.current.push({time:new Date().toISOString(),size:sizeRef.current,backend:result.backend,inferenceMs:result.inferenceMs,totalMs,count:result.boxes.length,mode:modeRef.current});
       if(samples.current.length>6000) samples.current.shift();
-      setStatus(modeRef.current === 'camera' ? '正在识别 · 画面仅在本机处理' : result.boxes.length ? '照片识别完成' : '未发现达到阈值的目标');
+      const cameraStatus = collectionTimerRef.current
+        ? `目标已锁定 · 正在汇集${collectionRef.current.size}类垃圾`
+        : hasConfidentTarget
+          ? `触发准备 ${Math.min(streakRef.current, EVENT_TRIGGER_STREAK)}/${EVENT_TRIGGER_STREAK} · 画面仅在本机处理`
+          : awaitingClearRef.current
+            ? '请短暂移开镜头，再对准下一件垃圾'
+            : '正在识别 · 画面仅在本机处理';
+      setStatus(modeRef.current === 'camera' ? cameraStatus : result.boxes.length ? '照片识别完成' : '未发现达到阈值的目标');
       return result;
     } finally {busy.current=false;setProcessing(false);}
   }
@@ -322,7 +331,7 @@ function App() {
         <select id="resolution" value={size} disabled={loading||processing} onChange={e=>loadModel(Number(e.target.value),backend)}><option value={416}>均衡 · 416（默认）</option><option value={640}>精细 · 640（更耗时）</option></select>
         <div className="range-label"><label htmlFor="confidence">置信度门槛</label><strong>{Math.round(threshold*100)}%</strong></div>
         <input id="confidence" type="range" min="0.1" max="0.9" step="0.05" value={threshold} onChange={e=>{const value=Number(e.target.value);thresholdRef.current=value;setThreshold(value);}} onPointerUp={()=>{if(mode==='photo'&&ready&&!processing)inferPhoto();}} onKeyUp={()=>{if(mode==='photo'&&ready&&!processing)inferPhoto();}}/>
-        <p className="hint">门槛越高，显示越谨慎；分数不代表整体准确率。</p>
+        <p className="hint">此阈值同时用于事件触发；目标连续识别2帧后进入约1.2秒类型汇集。分数不代表整体准确率。</p>
         <details><summary>性能与离线设置</summary><label className="field-label" htmlFor="backend">运行方式</label><select id="backend" value={backend} disabled={loading||processing} onChange={e=>loadModel(size,e.target.value)}><option value="wasm">兼容模式（默认）</option><option value="webgpu">尝试设备加速（不支持时自动回退）</option></select><p className="hint">切换设置会停止相机。加速效果需在当前设备实测。</p><button className="text-button" onClick={checkCache}>检查离线准备情况</button><p className="hint">{cacheStatus}</p><p className="hint">Safari：分享 → 添加到主屏幕。缓存被系统清理后，需要联网重新加载。</p></details>
         <details><summary>现场演示保障</summary><p className="hint">相机会在短时间内汇集塑料、纸板和金属类型并发送一张联合工单。上一轮完成后移开镜头再对准下一件垃圾，即可继续识别；按 R 仅用于清空全部现场记录。</p><button className="secondary" disabled={sent} onClick={() => {
           const current = resultsRef.current.filter(box => MODEL_LABEL_TO_EVENT[box.label]).map(box => ({ key: MODEL_LABEL_TO_EVENT[box.label], score: box.score }));
