@@ -4,7 +4,7 @@ import { CLASS_NAMES, COLORS, letterbox } from './detection.mjs';
 import { assetUrl } from './paths.mjs';
 import './realtime-config.js';
 import { DemoRelay } from './realtime.js';
-import { DEMO_SESSION, normalizeSession } from './demoData.js';
+import { createBatchEvents, DEMO_SESSION, MODEL_LABEL_TO_EVENT, normalizeSession } from './demoData.js';
 import './detector-original.css';
 import './detector-integration.css';
 
@@ -39,7 +39,9 @@ function App() {
   const inputCanvas = useRef(document.createElement('canvas')), thresholdRef = useRef(.25), sizeRef = useRef(416);
   const resultsRef = useRef([]), imageUrl = useRef(), startedAt = useRef(0), samples = useRef([]), actions = useRef({});
   const savedResults = useRef([]);
-  const relayRef = useRef(), roomRef = useRef({ stage: 'idle', eventSeq: 0 }), streakRef = useRef(0), sentRef = useRef(false);
+  const relayRef = useRef(), roomRef = useRef({ stage: 'idle', eventSeq: 0, events: [], activeEventIds: [] });
+  const streakRef = useRef(0), clearFramesRef = useRef(0), sentRef = useRef(false), awaitingClearRef = useRef(false);
+  const collectionRef = useRef(new Map()), collectionTimerRef = useRef(null);
   const [ready,setReady] = useState(false), [loading,setLoading] = useState(true), [progress,setProgress] = useState(0);
   const [status,setStatus] = useState('正在准备识别模型'), [error,setError] = useState('');
   const [mode,setMode] = useState('empty'), [size,setSize] = useState(416), [backend,setBackend] = useState('wasm'), [actualBackend,setActualBackend] = useState('wasm');
@@ -52,11 +54,12 @@ function App() {
   useEffect(() => {
     const relay = new DemoRelay(session, next => {
       roomRef.current = next;
-      const eventInProgress = next.stage !== 'idle';
+      const eventInProgress = !['idle', 'completed'].includes(next.stage);
       sentRef.current = eventInProgress;
       setSent(eventInProgress);
-      if (!eventInProgress) {
+      if (next.stage === 'idle') {
         streakRef.current = 0;
+        awaitingClearRef.current = false;
       }
     });
     relayRef.current = relay;
@@ -64,16 +67,23 @@ function App() {
     return () => relay.stop();
   }, []);
 
-  async function sendDetection(force = false) {
+  async function sendDetection(force = false, detectedTypes = []) {
     if (!relayRef.current || sentRef.current) return;
-    if (!force && roomRef.current.stage !== 'idle') return;
+    if (!['idle', 'completed'].includes(roomRef.current.stage)) return;
+    if (!force && awaitingClearRef.current) return;
+    const eventTime = Date.now();
+    const nextEvents = createBatchEvents(detectedTypes, eventTime, (roomRef.current.recordSeq || 0) + 1);
     sentRef.current = true;
+    awaitingClearRef.current = true;
     setSent(true);
-    setStatus('已识别目标 · 事件信号已发送');
+    setStatus(`已识别${nextEvents.map(event => event.label).join('、')} · 事件信号已发送`);
     await relayRef.current.update({
       stage: 'detected',
       eventSeq: (roomRef.current.eventSeq || 0) + 1,
-      eventTime: Date.now(),
+      recordSeq: (roomRef.current.recordSeq || 0) + nextEvents.length,
+      eventTime,
+      events: [...(roomRef.current.events || []), ...nextEvents],
+      activeEventIds: nextEvents.map(event => event.id),
       acceptedAt: null,
       completedAt: null,
     }, 'detector');
@@ -90,6 +100,7 @@ function App() {
 
   function stopCamera(message = '相机已停止') {
     generation.current++;
+    clearTimeout(collectionTimerRef.current); collectionTimerRef.current = null; collectionRef.current.clear();
     stream.current?.getTracks().forEach(track => track.stop()); stream.current = null;
     if (video.current) video.current.srcObject = null;
     if (modeRef.current === 'camera') { modeRef.current = 'empty'; setMode('empty'); setBoxes([]); resultsRef.current = []; overlay.current?.getContext('2d').clearRect(0,0,overlay.current.width,overlay.current.height); }
@@ -156,9 +167,33 @@ function App() {
       processedFrame.current.getContext('2d').drawImage(frame.current,0,0);
       drawBoxes(overlay.current,width,height,result.boxes);
       resultsRef.current=result.boxes;savedResults.current=result.boxes;setBoxes(result.boxes);setTiming({inferenceMs:result.inferenceMs,totalMs});
-      const hasConfidentTarget = result.boxes.some(box => box.score >= Math.max(.45, thresholdRef.current));
+      const targetDetections = result.boxes.filter(box => MODEL_LABEL_TO_EVENT[box.label] && box.score >= Math.max(.45, thresholdRef.current));
+      const hasConfidentTarget = targetDetections.length > 0;
       streakRef.current = hasConfidentTarget ? streakRef.current + 1 : 0;
-      if (hasConfidentTarget && (modeRef.current === 'photo' || streakRef.current >= 3)) sendDetection();
+      if (hasConfidentTarget) {
+        clearFramesRef.current = 0;
+        for (const box of targetDetections) {
+          const key = MODEL_LABEL_TO_EVENT[box.label];
+          const previous = collectionRef.current.get(key);
+          if (!previous || box.score > previous.score) collectionRef.current.set(key, { key, score: box.score });
+        }
+        if (!sentRef.current && !awaitingClearRef.current && modeRef.current === 'photo') {
+          const batch = [...collectionRef.current.values()]; collectionRef.current.clear();
+          sendDetection(false, batch);
+        } else if (!sentRef.current && !awaitingClearRef.current && streakRef.current >= 3 && !collectionTimerRef.current) {
+          setStatus('目标已锁定 · 正在汇集本轮垃圾类型');
+          collectionTimerRef.current = setTimeout(() => {
+            const batch = [...collectionRef.current.values()]; collectionRef.current.clear(); collectionTimerRef.current = null;
+            sendDetection(false, batch);
+          }, 2200);
+        }
+      } else {
+        clearFramesRef.current += 1;
+        if (clearFramesRef.current >= 3 && ['idle', 'completed'].includes(roomRef.current.stage)) {
+          awaitingClearRef.current = false;
+          collectionRef.current.clear();
+        }
+      }
       samples.current.push({time:new Date().toISOString(),size:sizeRef.current,backend:result.backend,inferenceMs:result.inferenceMs,totalMs,count:result.boxes.length,mode:modeRef.current});
       if(samples.current.length>6000) samples.current.shift();
       setStatus(modeRef.current === 'camera' ? '正在识别 · 画面仅在本机处理' : result.boxes.length ? '照片识别完成' : '未发现达到阈值的目标');
@@ -202,6 +237,7 @@ function App() {
 
   function openPhoto(url) {
     stopCamera();setError('');setBoxes([]);resultsRef.current=[];setTiming(null);setStatus('正在读取照片');
+    if (roomRef.current.stage === 'completed') awaitingClearRef.current = false;
     if(imageUrl.current){URL.revokeObjectURL(imageUrl.current);imageUrl.current=null;}
     modeRef.current='photo';setMode('photo');setPhotoSource(url);
   }
@@ -263,7 +299,10 @@ function App() {
         <input id="confidence" type="range" min="0.1" max="0.9" step="0.05" value={threshold} onChange={e=>{const value=Number(e.target.value);thresholdRef.current=value;setThreshold(value);}} onPointerUp={()=>{if(mode==='photo'&&ready&&!processing)inferPhoto();}} onKeyUp={()=>{if(mode==='photo'&&ready&&!processing)inferPhoto();}}/>
         <p className="hint">门槛越高，显示越谨慎；分数不代表整体准确率。</p>
         <details><summary>性能与离线设置</summary><label className="field-label" htmlFor="backend">运行方式</label><select id="backend" value={backend} disabled={loading||processing} onChange={e=>loadModel(size,e.target.value)}><option value="wasm">兼容模式（默认）</option><option value="webgpu">尝试设备加速（不支持时自动回退）</option></select><p className="hint">切换设置会停止相机。加速效果需在当前设备实测。</p><button className="text-button" onClick={checkCache}>检查离线准备情况</button><p className="hint">{cacheStatus}</p><p className="hint">Safari：分享 → 添加到主屏幕。缓存被系统清理后，需要联网重新加载。</p></details>
-        <details><summary>现场演示保障</summary><p className="hint">识别稳定后会自动通知指挥中心。每轮只发送一次；完成后在电脑端按 R 重置，按钮即可恢复。</p><button className="secondary" disabled={sent} onClick={() => sendDetection(true)}>{sent?'本轮事件已发送':'手动发送事件信号'}</button><p className="hint">房间码：{session}</p></details>
+        <details><summary>现场演示保障</summary><p className="hint">相机会在短时间内汇集塑料、纸板和金属类型并发送一张联合工单。上一轮完成后移开镜头再对准下一件垃圾，即可继续识别；按 R 仅用于清空全部现场记录。</p><button className="secondary" disabled={sent} onClick={() => {
+          const current = resultsRef.current.filter(box => MODEL_LABEL_TO_EVENT[box.label]).map(box => ({ key: MODEL_LABEL_TO_EVENT[box.label], score: box.score }));
+          sendDetection(true, current);
+        }}>{sent?'本轮事件处理中':'手动发送当前识别结果'}</button><p className="hint">房间码：{session}</p></details>
         <div className="section-title"><h2>检测结果</h2><button className="text-button" onClick={saveFrame} disabled={!timing}><Icon name="save"/>保存画面</button></div>
         {boxes.length?<ul className="detections">{boxes.map((box,i)=><li key={i}><span className="category-dot" style={{background:COLORS[box.label]}}/><span>{CLASS_NAMES[box.label]}</span><strong>{Math.round(box.score*100)}%</strong></li>)}</ul>:<p className="no-results">{timing?'未发现达到门槛的目标，可调整距离或阈值再试。':'识别后在这里查看类别与置信度。'}</p>}
         {sampleList.length>0&&<div className="samples"><h3>先试一张示例</h3><div>{sampleList.slice(0,3).map(s=><button key={s.url} disabled={!ready||loading||processing} onClick={()=>openPhoto(s.url)}><img src={s.url} alt={s.title}/><span>{s.title}</span></button>)}</div></div>}

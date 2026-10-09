@@ -244,27 +244,27 @@
                         <!-- 第一行 -->
                         <div class="grid grid-cols-3 gap-2 flex-1">
                             <div class="bg-blue-900/30 rounded border border-cyan-800/40 flex flex-col justify-center items-center">
-                                <div class="text-xs text-gray-400 mb-1">今日已处理</div>
-                                <div class="text-3xl text-cyan-400 font-bold glow-text">125,811</div>
+                                <div class="text-xs text-gray-400 mb-1">2026累计闭环</div>
+                                <div class="text-3xl text-cyan-400 font-bold glow-text" id="closed-issues">342</div>
                             </div>
                             <div class="bg-blue-900/30 rounded border border-cyan-800/40 flex flex-col justify-center items-center">
-                                <div class="text-xs text-gray-400 mb-1">今日待处理</div>
-                                <div class="text-3xl text-warn-yellow font-bold">1,452</div>
+                                <div class="text-xs text-gray-400 mb-1">当前待处理</div>
+                                <div class="text-3xl text-warn-yellow font-bold">26</div>
                             </div>
                             <div class="bg-blue-900/30 rounded border border-cyan-800/40 flex flex-col justify-center items-center">
                                 <div class="text-xs text-gray-400 mb-1">巡检里程(KM)</div>
-                                <div class="text-3xl text-white font-bold">45,210</div>
+                                <div class="text-3xl text-white font-bold">1,286</div>
                             </div>
                         </div>
                         <!-- 第二行 -->
                         <div class="grid grid-cols-2 gap-2 flex-1">
                             <div class="bg-blue-900/30 rounded border border-cyan-800/40 flex flex-col justify-center items-center cursor-pointer hover:bg-cyan-900/50">
-                                <div class="text-xs text-gray-400 mb-1">碳排放减少量</div>
-                                <div class="text-3xl text-green-400 font-bold glow-text">12,450 <span class="text-sm font-normal text-gray-300">kg</span></div>
+                                <div class="text-xs text-gray-400 mb-1">减少重复巡检</div>
+                                <div class="text-3xl text-green-400 font-bold glow-text">312 <span class="text-sm font-normal text-gray-300">km</span></div>
                             </div>
                             <div class="bg-blue-900/30 rounded border border-cyan-800/40 flex flex-col justify-center items-center cursor-pointer hover:bg-cyan-900/50">
-                                <div class="text-xs text-gray-400 mb-1">病害处理提效</div>
-                                <div class="text-3xl text-cyan-400 font-bold glow-text">+ 345 <span class="text-sm font-normal text-gray-300">%</span></div>
+                                <div class="text-xs text-gray-400 mb-1">响应效率提升</div>
+                                <div class="text-3xl text-cyan-400 font-bold glow-text">+ 53.3 <span class="text-sm font-normal text-gray-300">%</span></div>
                             </div>
                         </div>
                     </div>
@@ -280,13 +280,13 @@
                     <div class="hud-box flex-[2] flex justify-around items-center p-2 z-10">
                         <div class="hud-box-inner absolute inset-0 pointer-events-none"></div>
                         <div class="text-center z-10 cursor-pointer hover:scale-105 transition-transform" onclick="openModal('data-archive-modal')">
-                            <div class="text-sm text-gray-400 mb-1">今日累计异常</div>
-                            <div class="text-5xl font-tech text-cyan-400 glow-text" id="total-issues">125,811</div>
+                            <div class="text-sm text-gray-400 mb-1">2026累计事件</div>
+                            <div class="text-5xl font-tech text-cyan-400 glow-text" id="total-issues">368</div>
                         </div>
                         <div class="w-px h-12 bg-cyan-900/50"></div>
                         <div class="text-center z-10 cursor-pointer hover:scale-105 transition-transform" onclick="openModal('ai-model-modal')">
-                            <div class="text-sm text-gray-400 mb-1">AI自动闭环率</div>
-                            <div class="text-5xl font-tech text-neon-green glow-text">98.2%</div>
+                            <div class="text-sm text-gray-400 mb-1">事件闭环率</div>
+                            <div class="text-5xl font-tech text-neon-green glow-text">92.9%</div>
                         </div>
                     </div>
                     
@@ -444,7 +444,7 @@
                 <h2 class="text-xl font-bold text-cyan-300 glow-text ml-4 tracking-widest">微气候气象孪生与路面影响预测</h2>
             </div>
             <div class="text-cyan-400 font-tech text-sm flex gap-4">
-                <span>数据来源：心知天气 API</span>
+                <span>赛事演示参数 · 依据10月9日预报设置</span>
             </div>
         </header>
         <div class="flex-1 relative z-10 hud-box overflow-hidden">
@@ -468,7 +468,7 @@
             <div class="p-4 border-b border-cyan-800 flex justify-between items-center z-10 shrink-0">
                 <h2 class="text-2xl font-bold text-cyan-400 flex items-center gap-2">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    2026年 智慧城管全局态势分析报告
+                    2026年 北斗智慧巡检试点验证态势报告
                 </h2>
                 <div class="flex gap-4">
                     <button class="btn-outline px-3 py-1 text-xs" onclick="downloadPDF()">📥 导出 PDF</button>
@@ -487,20 +487,20 @@
                 <div class="col-span-1 flex flex-col gap-4">
                     <div class="grid grid-cols-2 gap-4 font-tech">
                         <div class="bg-blue-900/30 p-4 border border-cyan-800 text-center flex flex-col justify-center">
-                            <div class="text-xs text-gray-400 mb-1">累计排查里程</div>
-                            <div class="text-2xl text-cyan-400 font-bold">450,210 <span class="text-sm">KM</span></div>
+                            <div class="text-xs text-gray-400 mb-1">累计测试里程</div>
+                            <div class="text-2xl text-cyan-400 font-bold">1,286 <span class="text-sm">KM</span></div>
                         </div>
                         <div class="bg-blue-900/30 p-4 border border-cyan-800 text-center flex flex-col justify-center">
-                            <div class="text-xs text-gray-400 mb-1">设备平均完好率</div>
-                            <div class="text-2xl text-green-400 font-bold">99.4%</div>
+                            <div class="text-xs text-gray-400 mb-1">事件闭环率</div>
+                            <div class="text-2xl text-green-400 font-bold">92.9%</div>
                         </div>
                         <div class="bg-blue-900/30 p-4 border border-cyan-800 text-center flex flex-col justify-center">
-                            <div class="text-xs text-gray-400 mb-1">突发事件响应耗时</div>
-                            <div class="text-2xl text-yellow-400 font-bold">4.2 <span class="text-sm">MIN</span></div>
+                            <div class="text-xs text-gray-400 mb-1">平均响应耗时</div>
+                            <div class="text-2xl text-yellow-400 font-bold">8.6 <span class="text-sm">MIN</span></div>
                         </div>
                         <div class="bg-blue-900/30 p-4 border border-cyan-800 text-center flex flex-col justify-center">
-                            <div class="text-xs text-gray-400 mb-1">人力成本节约</div>
-                            <div class="text-2xl text-cyan-400 font-bold">¥ 2.45M</div>
+                            <div class="text-xs text-gray-400 mb-1">活跃测试终端</div>
+                            <div class="text-2xl text-cyan-400 font-bold">6 <span class="text-sm">台</span></div>
                         </div>
                     </div>
                     <!-- 真实的 ECharts 雷达图容器 -->
@@ -527,6 +527,7 @@
                     <div class="text-right"><div class="text-neon-green text-lg">1.6 m</div><div class="text-gray-500 text-xs">定位精度</div></div>
                 </div>
             </div>
+            <div id="detail-event-tabs" class="hidden mb-4 flex gap-2 flex-wrap"></div>
             <div class="space-y-3 text-sm">
                 <p><span class="text-gray-400">事件编号：</span><span class="font-tech text-cyan-300" id="detail-id">EVT-2026-X</span></p>
                 <p><span class="text-gray-400">发生位置：</span><span class="text-white" id="detail-loc">加载中...</span></p>
@@ -534,6 +535,10 @@
                 <p><span class="text-gray-400">识别置信度：</span><span class="font-tech text-cyan-300" id="detail-confidence">96%</span></p>
                 <p><span class="text-gray-400">事件时间：</span><span class="font-tech text-gray-300" id="detail-time">--:--:--</span></p>
                 <p><span class="text-gray-400">风险等级：</span><span class="text-warn-yellow">一般</span></p>
+                <p><span class="text-gray-400">执行人员：</span><span class="text-white" id="detail-worker">环卫人员03</span></p>
+                <p><span class="text-gray-400">现场距离：</span><span class="font-tech text-cyan-300" id="detail-distance">1.1 m</span></p>
+                <p><span class="text-gray-400">建议到达：</span><span class="text-neon-green" id="detail-arrival">现场即可处理</span></p>
+                <p><span class="text-gray-400">作业工具：</span><span class="text-white" id="detail-tools">—</span></p>
                 <p><span class="text-gray-400">北斗坐标：</span><span class="font-tech text-gray-300">39.8756°N&nbsp;&nbsp;116.4812°E</span></p>
                 <p><span class="text-gray-400">处置状态：</span><span class="text-neon-green" id="detail-status">已自动派单</span></p>
             </div>
@@ -596,7 +601,7 @@
         setInterval(() => {
             const now = new Date();
             document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', {hour12: false});
-            document.getElementById('current-date').innerText = now.toISOString().split('T')[0];
+            document.getElementById('current-date').innerText = now.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }).replaceAll('/', '-');
         }, 1000);
 
         // ================= 模态框/抽屉 =================
@@ -617,6 +622,14 @@
                 document.getElementById('detail-id').innerText = 'EVT-BD-' + Math.floor(Math.random()*10000);
                 document.getElementById('detail-loc').innerText = locText || '某路段';
                 document.getElementById('detail-desc').innerText = descText || '异常';
+                document.getElementById('detail-confidence').innerText = '—';
+                document.getElementById('detail-time').innerText = '历史归档';
+                document.getElementById('detail-worker').innerText = '历史作业单元';
+                document.getElementById('detail-distance').innerText = '—';
+                document.getElementById('detail-arrival').innerText = '已完成';
+                document.getElementById('detail-tools').innerText = '归档记录';
+                const tabs = document.getElementById('detail-event-tabs');
+                tabs.classList.add('hidden'); tabs.innerHTML = '';
                 
                 const statusEl = document.getElementById('detail-status');
                 if(isEmg) {
@@ -666,7 +679,7 @@
                 series: [{
                     type: 'radar',
                     data: [{
-                        value: [96, 99, 90, 98, 88, 92],
+                        value: [72, 88, 81, 93, 64, 58],
                         name: '系统综合能力',
                         itemStyle: { color: '#39ff14' },
                         areaStyle: { color: 'rgba(57, 255, 20, 0.3)' },
@@ -681,7 +694,7 @@
             const reportBox = document.getElementById('ai-report-text');
             reportBox.innerHTML = '<span class="text-cyan-400">>> DeepSeek-R1 正在汇集全局北斗时空数据，开始研判...</span>';
             
-            const reportText = `【本周城市巡检态势综述】\n\n总体态势：\n依托北斗高精度定位与端侧AI算力，本周系统共处理异常感知数据 12.5万 宗。设备在线率 99.4%，算力节点运行平稳。\n\n病害分布分析：\n· 占比最高：白色垃圾（32%），主要集中于【科创大道】周边商业区，具有明显早晚高峰潮汐特征。\n· 严重病害：路面裂缝与违章占道（28%），已通过 DeepSeek 大模型完成工单自动派发并闭环。\n\nAI 调度效益：\n大模型 DeepSeek-V2.5 累计下发智能调度指令 14,200 次，路线优化算法使清扫车队平均碳排放下降 14%。相比传统人工巡检模式，响应时间由 2 小时缩短至 15 分钟内，综合治理成本显著降低。\n\n决策建议：\n预计明日有降雨，建议预先调配【滨海大道】无人机编队进行低空内涝隐患排查，提升防汛响应等级。`;
+            const reportText = `【2026年试点验证态势综述】\n\n统计口径：\n截至2026年10月11日，数据来自校内测试及小范围企业合作验证，不代表城市级正式运营规模。\n\n总体态势：\n系统累计完成1,286公里测试，记录异常事件368件，完成闭环342件，闭环率92.9%。当前接入测试终端9台，其中6台保持活跃。\n\n事件分布：\n塑料包装物104件、纸板82件、纸张64件，三类合计约占68%；金属56件、玻璃36件、可降解垃圾26件。\n\nAI调度验证：\n198件事件进入自动闭环流程，其余事件经人工确认后完成处置。内部对比样本中，平均响应时间由18.4分钟缩短至8.6分钟，下降约53.3%。\n\n气象与作业建议：\n10月11日朝阳区预设为多云转阴、16—25℃、风力2级、无降水，适合开展现场即时处置。建议继续关注轻质垃圾二次飘移风险。\n\n后续建议：\n扩大测试点位，继续提升复杂光照、小目标和多目标条件下的识别稳定性，并保留人工确认机制。`;
             
             setTimeout(() => { typeWriter(reportText, reportBox, 20); }, 500);
         }
@@ -807,7 +820,7 @@
         const chaoyangCenter = [116.52, 39.92];
         const bjutCenter = [116.4812, 39.8756];
         // 比赛现场两台手机位于同一张桌面：坐标按亚米级同点位设置，显示时仅做图标错位避免完全遮挡。
-        const workerCenter = [116.481203, 39.875602];
+        const workerCenter = [116.481213, 39.875602];
         let demoStage = 'idle';
         let appliedDemoStage = null;
 
@@ -868,9 +881,9 @@
                                     <span style="color:${params.color};">●</span>
                                 </div>
                                 <div style="padding:12px; font-size:12px; line-height:1.9; color:#ccc;">
-                                    <div><strong style="color:#00f3ff;">事件:</strong> 道路抛洒物</div>
-                                    <div><strong style="color:#00f3ff;">位置:</strong> 北京工业大学平乐园校区</div>
-                                    <div><strong style="color:#00f3ff;">置信度:</strong> 96%</div>
+                                    <div><strong style="color:#00f3ff;">事件:</strong> ${currentActiveEvents.map(event => event.title).join('、') || '现场垃圾事件'}</div>
+                                    <div><strong style="color:#00f3ff;">位置:</strong> 国际文化交流中心</div>
+                                    <div><strong style="color:#00f3ff;">置信度:</strong> ${currentActiveEvents.map(event => event.confidence).join(' / ') || '—'}</div>
                                     <div><strong style="color:#00f3ff;">北斗坐标:</strong> 39.8756°N, 116.4812°E</div>
                                 </div>
                             </div>`;
@@ -1011,19 +1024,19 @@
             yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(0,243,255,0.1)' } }, axisLabel: { color: '#888', fontSize: 10 } },
             series: [
                 { 
-                    name: '发现病害量', type: 'line', smooth: true, data: [450, 420, 560, 400, 580, 520, 460, 480, 500, 410, 350, 300], 
+                    name: '发现病害量', type: 'line', smooth: true, data: [18, 22, 31, 34, 38, 42, 46, 51, 47, 39, null, null],
                     itemStyle: { color: '#ff3366' }, areaStyle: { color: 'rgba(255,51,102,0.1)' },
                     label: { show: false },
                     emphasis: { focus: 'series', label: { show: true, position: 'top', formatter: '{c}', color: '#fff', backgroundColor: 'rgba(255,51,102,0.8)', padding: [4, 6], borderRadius: 4, fontSize: 12, fontWeight: 'bold' } }
                 },
                 { 
-                    name: '已处理量', type: 'line', smooth: true, data: [380, 390, 500, 350, 510, 480, 420, 450, 460, 380, 310, 270], 
+                    name: '已处理量', type: 'line', smooth: true, data: [16, 20, 28, 31, 35, 39, 43, 47, 44, 39, null, null],
                     itemStyle: { color: '#39ff14' },
                     label: { show: false },
                     emphasis: { focus: 'series', label: { show: true, position: 'top', formatter: '{c}', color: '#fff', backgroundColor: 'rgba(57,255,20,0.8)', padding: [4, 6], borderRadius: 4, fontSize: 12, fontWeight: 'bold' } }
                 },
                 { 
-                    name: '自动闭环量', type: 'line', smooth: true, data: [150, 180, 240, 200, 310, 350, 300, 340, 360, 300, 250, 220], 
+                    name: '自动闭环量', type: 'line', smooth: true, data: [7, 9, 13, 15, 18, 21, 25, 30, 29, 31, null, null],
                     itemStyle: { color: '#00f3ff' }, areaStyle: { color: 'rgba(0,243,255,0.1)' },
                     label: { show: false },
                     emphasis: { focus: 'series', label: { show: true, position: 'top', formatter: '{c}', color: '#fff', backgroundColor: 'rgba(0,243,255,0.8)', padding: [4, 6], borderRadius: 4, fontSize: 12, fontWeight: 'bold' } }
@@ -1056,11 +1069,11 @@
                     `;
                 }
             }, 
-            color: ['#00f3ff', '#39ff14', '#ff3366', '#f6e58d', '#e056fd'],
+            color: ['#00f3ff', '#39ff14', '#ff3366', '#f6e58d', '#e056fd', '#ff9f43'],
             series: [{
                 name: '病害类型', type: 'pie', radius: ['30%', '55%'], center: ['50%', '50%'], itemStyle: { borderRadius: 3, borderColor: '#010811', borderWidth: 2 },
                 label: { show: true, color: '#fff', fontSize: 10 },
-                data: [ { value: 1048, name: '白色垃圾' }, { value: 735, name: '路面裂缝' }, { value: 580, name: '违章占道' }, { value: 484, name: '绿化破损' }, { value: 300, name: '大件抛洒物' } ]
+                data: [ { value: 104, name: '塑料' }, { value: 82, name: '纸板' }, { value: 64, name: '纸张' }, { value: 56, name: '金属' }, { value: 36, name: '玻璃' }, { value: 26, name: '可降解垃圾' } ]
             }]
         });
 
@@ -1076,19 +1089,20 @@
 
         // ================= 事件流 =================
         const eventList = document.getElementById('event-list');
-        let issueCount = 125811;
+        let issueCount = 368;
+        let closedIssueCount = 342;
         
         const historicalEvents = [
-            { daysAgo: 1, hour: 16, minute: 42, street: '滨海大道', type: '绿化带漂浮物聚集' },
-            { daysAgo: 1, hour: 10, minute: 18, street: '大学城南路', type: '违规停放共享单车堆积' },
-            { daysAgo: 2, hour: 17, minute: 36, street: '高新六路', type: '非机动车道塑料垃圾' },
+            { daysAgo: 1, hour: 16, minute: 42, street: '西大望路', type: '绿化带漂浮物聚集' },
+            { daysAgo: 1, hour: 10, minute: 18, street: '松榆南路', type: '违规停放共享单车堆积' },
+            { daysAgo: 2, hour: 17, minute: 36, street: '东三环南路', type: '非机动车道塑料垃圾' },
             { daysAgo: 2, hour: 9, minute: 25, street: '朝阳路', type: '路面积水处置' },
-            { daysAgo: 3, hour: 14, minute: 8, street: '软件园中路', type: '路面沥青破损修复' },
-            { daysAgo: 4, hour: 11, minute: 53, street: '创新大道', type: '井盖异常复核' },
-            { daysAgo: 5, hour: 18, minute: 20, street: '香山路', type: '满溢垃圾桶清运' },
-            { daysAgo: 6, hour: 13, minute: 47, street: '海秀快速路', type: '交通护栏修复' },
-            { daysAgo: 7, hour: 9, minute: 32, street: '云谷路', type: '占道经营处置' },
-            { daysAgo: 7, hour: 8, minute: 5, street: '望海大道', type: '散落渣土清理' }
+            { daysAgo: 3, hour: 14, minute: 8, street: '广渠路', type: '路面沥青破损复核' },
+            { daysAgo: 4, hour: 11, minute: 53, street: '工大桥路', type: '井盖异常复核' },
+            { daysAgo: 5, hour: 18, minute: 20, street: '劲松路', type: '满溢垃圾桶清运' },
+            { daysAgo: 6, hour: 13, minute: 47, street: '南磨房路', type: '交通护栏复核' },
+            { daysAgo: 7, hour: 9, minute: 32, street: '平乐园路', type: '纸类垃圾清理' },
+            { daysAgo: 7, hour: 8, minute: 5, street: '九龙山路', type: '散落包装物清理' }
         ];
 
         function historicalTime(item) {
@@ -1145,9 +1159,11 @@
         }
 
         let demoEventSeqRendered = 0;
+        let autoOpenedSeq = 0;
         let aiRunSeq = 0;
         let completedSeq = 0;
         let lastStageNote = '';
+        let currentActiveEvents = [];
 
         function demoStageLabel(stage) {
             return {
@@ -1156,34 +1172,73 @@
             }[stage] || '系统待命';
         }
 
-        function updateDemoDrawer(room) {
-            document.getElementById('detail-id').innerText = `BJUT-${String(room.eventSeq || 1).padStart(3, '0')}`;
-            document.getElementById('detail-loc').innerText = '北京工业大学平乐园校区道路';
-            document.getElementById('detail-desc').innerText = '道路抛洒物';
-            document.getElementById('detail-confidence').innerText = '96%';
-            document.getElementById('detail-time').innerText = new Date(room.eventTime || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
+        function activeEventsFor(room) {
+            const ids = new Set(room.activeEventIds || []);
+            return (room.events || []).filter(event => ids.has(event.id));
+        }
+
+        function updateDemoDrawer(event, stage) {
+            if (!event) return;
+            document.getElementById('detail-id').innerText = event.id;
+            document.getElementById('detail-loc').innerText = event.location;
+            document.getElementById('detail-desc').innerText = event.title;
+            document.getElementById('detail-confidence').innerText = event.confidence;
+            document.getElementById('detail-time').innerText = new Date(event.eventTime || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
+            document.getElementById('detail-worker').innerText = event.worker || '环卫人员03';
+            document.getElementById('detail-distance').innerText = event.distance || '1.1 m';
+            document.getElementById('detail-arrival').innerText = event.arrival || '现场即可处理';
+            document.getElementById('detail-tools').innerText = event.tools || '按事件类型配置';
             const statusEl = document.getElementById('detail-status');
-            statusEl.innerText = demoStageLabel(room.stage);
-            statusEl.className = room.stage === 'completed' ? 'text-neon-green font-bold'
-                : (room.stage === 'accepted' || room.stage === 'dispatched') ? 'text-warn-yellow font-bold'
+            const effectiveStage = event.status || stage;
+            statusEl.innerText = demoStageLabel(effectiveStage);
+            statusEl.className = effectiveStage === 'completed' ? 'text-neon-green font-bold'
+                : (effectiveStage === 'accepted' || effectiveStage === 'dispatched') ? 'text-warn-yellow font-bold'
                 : 'text-red-400 font-bold';
         }
 
-        function addDemoEvent(room) {
-            const li = document.createElement('li');
-            li.id = 'bjut-demo-event-row';
-            li.dataset.eventKind = 'live';
-            li.dataset.eventTime = String(room.eventTime || Date.now());
-            li.onclick = () => document.getElementById('event-detail-modal').classList.remove('translate-x-full');
-            li.className = 'grid grid-cols-[76px_1fr_42px] gap-2 items-center p-2 rounded bg-red-900/40 border-l-2 border-red-500 font-bold hover-list-item';
-            const time = new Date(room.eventTime || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
-            li.innerHTML = `<span class="text-red-400 whitespace-nowrap text-[11px]">⚠️ ${time}</span><span class="text-white truncate">北京工业大学 · 道路抛洒物</span><span id="bjut-demo-event-status" class="text-red-400 text-right whitespace-nowrap">待处理</span>`;
-            eventList.prepend(li);
+        function showEventDrawer(events, selectedId, stage) {
+            const selected = events.find(event => event.id === selectedId) || events[0];
+            if (!selected) return;
+            const tabs = document.getElementById('detail-event-tabs');
+            tabs.innerHTML = '';
+            tabs.classList.toggle('hidden', events.length < 2);
+            events.forEach(event => {
+                const button = document.createElement('button');
+                button.className = `btn-outline px-2 py-1 text-xs ${event.id === selected.id ? 'active-tab' : ''}`;
+                button.innerText = event.label;
+                button.onclick = () => showEventDrawer(events, event.id, stage);
+                tabs.appendChild(button);
+            });
+            updateDemoDrawer(selected, stage);
+            document.getElementById('event-detail-modal').classList.remove('translate-x-full');
+        }
+
+        function syncDemoEvents(room) {
+            (room.events || []).forEach(event => {
+                let li = document.getElementById(`live-${event.id}`);
+                if (!li) {
+                    li = document.createElement('li');
+                    li.id = `live-${event.id}`;
+                    li.dataset.eventKind = 'live';
+                    li.dataset.eventTime = String(event.eventTime || Date.now());
+                    li.className = 'grid grid-cols-[76px_1fr_50px] gap-2 items-center p-2 rounded bg-red-900/40 border-l-2 border-red-500 font-bold hover-list-item';
+                    li.onclick = () => showEventDrawer([event], event.id, event.status);
+                    eventList.prepend(li);
+                }
+                const stage = event.status || 'detected';
+                const time = new Date(event.eventTime || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
+                const tone = stage === 'completed' ? 'text-neon-green' : (stage === 'accepted' || stage === 'dispatched') ? 'text-warn-yellow' : 'text-red-400';
+                const rowTone = stage === 'completed' ? 'bg-green-900/20 border-green-500' : (stage === 'accepted' || stage === 'dispatched') ? 'bg-yellow-900/20 border-yellow-500' : 'bg-red-900/40 border-red-500';
+                li.className = `grid grid-cols-[76px_1fr_50px] gap-2 items-center p-2 rounded border-l-2 font-bold hover-list-item ${rowTone}`;
+                li.innerHTML = `<span class="${tone} whitespace-nowrap text-[11px]">⚠️ ${time}</span><span class="text-white truncate" title="${event.id}">${event.shortLocation || '国际文化交流中心'} · ${event.title}</span><span class="${tone} text-right whitespace-nowrap">${demoStageLabel(stage)}</span>`;
+                li.onclick = () => showEventDrawer([event], event.id, stage);
+            });
         }
 
         function appendStageNote(stage, text, tone = 'text-cyan-300') {
-            if (lastStageNote === stage) return;
-            lastStageNote = stage;
+            const noteKey = `${demoEventSeqRendered}-${stage}`;
+            if (lastStageNote === noteKey) return;
+            lastStageNote = noteKey;
             const note = document.createElement('div');
             note.className = `mt-2 border-l-2 border-cyan-500 pl-2 bg-cyan-900/20 p-2 rounded ${tone} text-xs`;
             note.innerText = text;
@@ -1197,12 +1252,16 @@
             chatBox.innerHTML = '';
             const start = document.createElement('div');
             start.className = 'mb-3';
-            start.innerHTML = '<span class="text-red-400 font-bold">[边缘节点告警]</span> 北京工业大学检测到道路抛洒物<br><span class="text-cyan-400 mt-1 inline-block font-tech">>> DeepSeek-R1 正在进行多维时空联合推演...</span>';
+            const events = activeEventsFor(room);
+            const eventNames = events.map(event => event.title).join('、');
+            start.innerHTML = `<span class="text-red-400 font-bold">[边缘节点告警]</span> 国际文化交流中心检测到${eventNames}<br><span class="text-cyan-400 mt-1 inline-block font-tech">>> 【预设演示脚本】正在进行多维时空联合推演...</span>`;
             chatBox.appendChild(start);
             const reply = document.createElement('div');
             reply.className = 'border-l-2 border-cyan-500 pl-2 bg-blue-900/30 p-2 rounded text-cyan-50 text-xs leading-relaxed';
             chatBox.appendChild(reply);
-            const text = '【事件解析】识别为道路纸类与塑料抛洒物，置信度 96%。\n【北斗校核】事件锚定北京工业大学平乐园校区，定位精度 1.6 m。\n【环境评估】当前无降水，周边道路交通状态正常。\n【风险研判】事件等级：轻度，无需临时交通管制。\n【资源匹配】推荐执行：环卫人员03，与事件点处于同一现场点位（<1 m）。\n【路线规划】现场作业端 → 事件点。\n【调度结论】方案已生成，准备下发现场作业端。';
+            const eventLines = events.map(event => `· ${event.title}（${event.confidence}）：${event.analysis}`).join('\n');
+            const actionLines = events.map(event => `· ${event.label}：${event.tools}；${event.action}。`).join('\n');
+            const text = `【预设演示脚本】\n【事件解析】\n${eventLines}\n【北斗校核】事件锚定北京工业大学平乐园校区国际文化交流中心，定位精度 1.6 m。\n【环境评估】10月11日多云转阴、风力2级、无降水，现场具备即时处置条件。\n【风险研判】风险等级：一般，无需临时交通管制。\n【资源匹配】推荐执行：环卫人员03；距事件点 1.1 m，现场即可处理。\n【作业建议】\n${actionLines}\n【调度结论】联合处置方案已生成，准备下发现场作业端。`;
             await typeWriter(text, reply, 22);
         }
 
@@ -1210,33 +1269,33 @@
             demoStage = room.stage || 'idle';
             const stageChanged = demoStage !== appliedDemoStage;
             if (demoStage === 'idle') {
-                if (stageChanged) {
+                if (stageChanged || (room.events || []).length === 0) {
                     closeDrawer('event-detail-modal');
-                    document.getElementById('bjut-demo-event-row')?.remove();
+                    document.querySelectorAll('[data-event-kind="live"]').forEach(row => row.remove());
                     chatBox.innerHTML = '<div class="text-gray-400 italic mb-2 font-tech">DeepSeek-R1 Standby. 等待边缘节点数据汇入...</div>';
-                    demoEventSeqRendered = 0; aiRunSeq = 0; lastStageNote = '';
+                    demoEventSeqRendered = 0; autoOpenedSeq = 0; aiRunSeq = 0; completedSeq = 0; lastStageNote = ''; currentActiveEvents = [];
+                    issueCount = 368; closedIssueCount = 342;
+                    document.getElementById('total-issues').innerText = '368';
+                    document.getElementById('closed-issues').innerText = '342';
                     switchMapMode('sense');
                 }
                 appliedDemoStage = demoStage;
                 return;
             }
 
+            currentActiveEvents = activeEventsFor(room);
+            syncDemoEvents(room);
             if (demoEventSeqRendered !== room.eventSeq) {
-                document.getElementById('bjut-demo-event-row')?.remove();
-                addDemoEvent(room);
                 demoEventSeqRendered = room.eventSeq;
+                lastStageNote = '';
             }
-            updateDemoDrawer(room);
-            document.getElementById('event-detail-modal').classList.remove('translate-x-full');
-            const eventStatus = document.getElementById('bjut-demo-event-status');
-            if (eventStatus) {
-                eventStatus.innerText = demoStageLabel(demoStage);
-                eventStatus.className = demoStage === 'completed' ? 'text-neon-green'
-                    : (demoStage === 'accepted' || demoStage === 'dispatched') ? 'text-warn-yellow' : 'text-red-400';
+            if (demoStage === 'detected' && autoOpenedSeq !== room.eventSeq) {
+                autoOpenedSeq = room.eventSeq;
+                showEventDrawer(currentActiveEvents, currentActiveEvents[0]?.id, demoStage);
             }
 
             if (demoStage === 'analyzing') {
-                if (stageChanged) switchMapMode('dispatch');
+                if (stageChanged) { closeDrawer('event-detail-modal'); switchMapMode('dispatch'); }
                 runDemoAnalysis(room);
             } else if (demoStage === 'dispatched') {
                 if (stageChanged) switchMapMode('dispatch');
@@ -1249,12 +1308,15 @@
                 appendStageNote('completed', '✔ 现场处置完成，事件已进入闭环归档。', 'text-neon-green');
                 if (completedSeq !== room.eventSeq) {
                     completedSeq = room.eventSeq;
-                    issueCount += 1;
+                    issueCount += Math.max(1, currentActiveEvents.length);
                     document.getElementById('total-issues').innerText = issueCount.toLocaleString();
+                    const closed = document.getElementById('closed-issues');
+                    closedIssueCount += Math.max(1, currentActiveEvents.length);
+                    if (closed) closed.innerText = closedIssueCount.toLocaleString();
                 }
             } else {
                 if (stageChanged) switchMapMode('sense');
-                chatBox.innerHTML = '<div class="text-red-400 font-bold">[边缘节点告警] 北京工业大学检测到道路抛洒物</div><div class="text-cyan-400 mt-2 font-tech">>> 事件已建档，正在启动智能研判...</div>';
+                chatBox.innerHTML = `<div class="text-red-400 font-bold">[边缘节点告警] 国际文化交流中心检测到${currentActiveEvents.map(event => event.title).join('、')}</div><div class="text-cyan-400 mt-2 font-tech">>> 事件已建档，正在启动预设调度研判...</div>`;
             }
             refreshDemoEventPoint();
             appliedDemoStage = demoStage;
@@ -1325,12 +1387,16 @@
 
         function initPage3Map(geoJson) {
             p3Chart = echarts.init(document.getElementById('page3-map'));
-            const districtData = geoJson.features.map(f => ({
-                name: f.properties.name,
-                value: Math.floor(Math.random() * 200),
-                total: Math.floor(Math.random() * 500 + 100),
-                cars: Math.floor(Math.random() * 50 + 10)
-            }));
+            const pilotStats = {
+                '朝阳区': [184, 175, 3], '海淀区': [45, 41, 1], '丰台区': [32, 29, 1], '通州区': [25, 23, 1],
+                '大兴区': [20, 18, 0], '昌平区': [16, 15, 0], '顺义区': [12, 11, 0], '西城区': [10, 9, 0],
+                '东城区': [8, 7, 0], '石景山区': [5, 4, 0], '门头沟区': [3, 3, 0], '房山区': [3, 2, 0],
+                '怀柔区': [2, 2, 0], '密云区': [1, 1, 0], '平谷区': [1, 1, 0], '延庆区': [1, 1, 0]
+            };
+            const districtData = geoJson.features.map(f => {
+                const [total, closed, terminals] = pilotStats[f.properties.name] || [0, 0, 0];
+                return { name: f.properties.name, value: closed, total, cars: terminals };
+            });
             p3Chart.setOption({
                 tooltip: {
                     trigger: 'item', backgroundColor: 'rgba(4,16,35,0.9)', borderColor: '#00f3ff', textStyle: {color: '#fff'},
@@ -1344,7 +1410,7 @@
                                 </div>`;
                     }
                 },
-                visualMap: { show: false, min: 0, max: 200, inRange: { color: ['rgba(0,243,255,0.1)', 'rgba(0,243,255,0.6)'] } },
+                visualMap: { show: false, min: 0, max: 175, inRange: { color: ['rgba(0,243,255,0.08)', 'rgba(0,243,255,0.65)'] } },
                 series: [{
                     type: 'map', map: 'beijing', roam: true, zoom: 1.1,
                     label: { show: true, color: '#fff', fontSize: 10 },
@@ -1357,20 +1423,22 @@
 
         function initPage4Map(geoJson) {
             p4Chart = echarts.init(document.getElementById('page4-map'));
-            const weatherTypes = ['晴朗', '多云', '大风', '大雨'];
-            const weatherColors = {'晴朗': '#2ecc71', '多云': '#3498db', '大风': '#f1c40f', '大雨': '#e74c3c'};
-            
+            const weatherColors = {'多云转阴': '#3498db', '多云': '#4aa3df', '阴': '#7f8fa6'};
+            const districtWeather = {
+                '朝阳区': ['多云转阴', 23, 58, 2, 35, 0.68], '海淀区': ['多云转阴', 22, 59, 2, 34, 0.68],
+                '东城区': ['多云转阴', 23, 57, 2, 36, 0.68], '西城区': ['多云转阴', 23, 57, 2, 36, 0.68],
+                '丰台区': ['多云转阴', 23, 58, 2, 35, 0.68], '石景山区': ['多云', 22, 59, 2, 33, 0.69],
+                '通州区': ['多云转阴', 23, 57, 2, 34, 0.68], '大兴区': ['多云转阴', 23, 58, 2, 34, 0.68],
+                '昌平区': ['多云', 21, 61, 2, 31, 0.69], '顺义区': ['多云转阴', 22, 60, 2, 32, 0.68],
+                '房山区': ['多云', 22, 60, 2, 32, 0.69], '门头沟区': ['多云', 21, 62, 2, 30, 0.69],
+                '怀柔区': ['阴', 20, 64, 2, 28, 0.67], '密云区': ['阴', 20, 65, 2, 27, 0.67],
+                '平谷区': ['多云转阴', 21, 62, 2, 29, 0.68], '延庆区': ['阴', 19, 66, 2, 26, 0.67]
+            };
             const wData = geoJson.features.map(f => {
-                const wt = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+                const [weather, temp, hum, wind, pm, fric] = districtWeather[f.properties.name] || ['多云转阴', 22, 60, 2, 33, 0.68];
                 return {
-                    name: f.properties.name,
-                    weather: wt,
-                    temp: Math.floor(Math.random() * 15 + 10) + '°C',
-                    hum: Math.floor(Math.random() * 50 + 30) + '%',
-                    wind: Math.floor(Math.random() * 5 + 1) + ' 级',
-                    pm: Math.floor(Math.random() * 100 + 20),
-                    fric: (Math.random() * 0.5 + 0.3).toFixed(2), 
-                    itemStyle: { areaColor: weatherColors[wt], opacity: 0.6 }
+                    name: f.properties.name, weather, temp: `${temp}°C`, hum: `${hum}%`, wind: `${wind} 级`, pm,
+                    fric: fric.toFixed(2), itemStyle: { areaColor: weatherColors[weather], opacity: 0.65 }
                 };
             });
 

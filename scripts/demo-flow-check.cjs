@@ -128,16 +128,21 @@ const fs = require('node:fs');
     );
 
     await detector.getByText('现场演示保障', { exact: true }).click();
-    await detector.getByRole('button', { name: '手动发送事件信号' }).click();
+    await detector.getByRole('button', { name: '手动发送当前识别结果' }).click();
     await dashboard.waitForFunction(() => !document.querySelector('#event-detail-modal').classList.contains('translate-x-full'));
     assert.match(await dashboard.locator('#event-detail-modal').innerText(), /北京工业大学/);
-    assert.match(await dashboard.locator('#event-detail-modal').innerText(), /道路抛洒物/);
+    assert.match(await dashboard.locator('#event-detail-modal').innerText(), /塑料包装物散落/);
+    assert.match(await dashboard.locator('#event-detail-modal').innerText(), /1.1 m/);
     assert.equal(await dashboard.locator('#event-detail-modal img').count(), 0, 'event drawer must not render an image');
     assert.equal(await dashboard.locator('#event-list [data-event-kind="live"]').count(), 1, 'only the detector signal may add a live event');
 
+    await dashboard.waitForFunction(() => document.querySelector('#event-detail-modal').classList.contains('translate-x-full'), null, { timeout: 5000 });
+    assert.match(await dashboard.locator('#ai-chat-box').innerText(), /预设演示脚本/);
+
     await worker.getByText('新任务').waitFor({ timeout: 20000 });
     assert.equal(await worker.locator('.task-card img').count(), 0, 'worker task card must not render an image');
-    assert.match(await worker.locator('.task-card').innerText(), /< 1 m/);
+    assert.match(await worker.locator('.task-card').innerText(), /1.1 m/);
+    assert.match(await worker.locator('.task-card').innerText(), /塑料包装物散落/);
     const onsiteDistance = await dashboard.evaluate(() => {
       const chart = window.echarts?.getInstanceByDom(document.querySelector('#main-echarts-map'));
       const series = chart?.getOption()?.series || [];
@@ -145,12 +150,18 @@ const fs = require('node:fs');
       const event = series.find(item => item.id === 'bjut-demo-event')?.data?.[0]?.value;
       return worker && event ? Math.hypot(worker[0] - event[0], worker[1] - event[1]) : null;
     });
-    assert.ok(onsiteDistance !== null && onsiteDistance < 0.00001, 'worker and event coordinates must be within the same onsite point');
+    assert.ok(onsiteDistance !== null && onsiteDistance < 0.00002, 'worker and event coordinates must be within the same onsite point');
     await dashboard.screenshot({ path: 'validation/dispatch-same-point.png', fullPage: true });
     await worker.getByRole('button', { name: '接单' }).click();
-    await dashboard.waitForFunction(() => document.querySelector('#detail-status')?.textContent.includes('处理中'));
+    await dashboard.waitForFunction(() => [...document.querySelectorAll('#event-list [data-event-kind="live"]')].some(row => row.textContent.includes('处理中')));
+    assert.equal(await dashboard.locator('#event-detail-modal').evaluate(node => node.classList.contains('translate-x-full')), true, 'accept must not reopen drawer');
     await worker.getByRole('button', { name: '完成' }).click();
-    await dashboard.waitForFunction(() => document.querySelector('#detail-status')?.textContent.includes('已完成'));
+    await dashboard.waitForFunction(() => [...document.querySelectorAll('#event-list [data-event-kind="live"]')].some(row => row.textContent.includes('已完成')));
+    assert.equal(await dashboard.locator('#event-detail-modal').evaluate(node => node.classList.contains('translate-x-full')), true, 'complete must not reopen drawer');
+
+    await detector.getByRole('button', { name: '手动发送当前识别结果' }).click();
+    await dashboard.waitForFunction(() => document.querySelectorAll('#event-list [data-event-kind="live"]').length === 2);
+    assert.equal(await dashboard.locator('#event-list [data-event-kind="live"]').count(), 2, 'completed live events must remain when another round starts');
 
     await dashboard.screenshot({ path: 'validation/original-dashboard-flow.png', fullPage: true });
     await detector.screenshot({ path: 'validation/original-detector.png', fullPage: true });
@@ -158,8 +169,9 @@ const fs = require('node:fs');
     assert.deepEqual(errors, []);
     await dashboard.keyboard.press('r');
     await worker.getByText('正在等待新任务').waitFor({ timeout: 20000 });
-    await detector.getByRole('button', { name: '手动发送事件信号' }).waitFor({ state: 'visible', timeout: 20000 });
-    console.log(JSON.stringify({ passed: true, checks: [expectCloud ? 'three-isolated-cloud-clients' : 'browser-local-relay', 'detector-to-dashboard-signal', 'cloud-status-hidden', 'static-historical-event-pool', 'only-live-signal-adds-event', 'three-map-presets', 'all-maps-remain-interactive', 'same-onsite-map-point', 'chaoyang-map-rendered', 'drawer-has-no-photo', 'worker-card-has-no-photo', 'detector-ready', 'reset-enables-next-round', 'dispatch-received', 'accepted', 'completed'] }, null, 2));
+    await detector.getByRole('button', { name: '手动发送当前识别结果' }).waitFor({ state: 'visible', timeout: 20000 });
+    assert.equal(await dashboard.locator('#event-list [data-event-kind="live"]').count(), 0, 'reset must clear all live event rows');
+    console.log(JSON.stringify({ passed: true, checks: [expectCloud ? 'three-isolated-cloud-clients' : 'browser-local-relay', 'detector-to-dashboard-signal', 'cloud-status-hidden', 'static-historical-event-pool', 'accumulated-live-events-before-reset', 'new-detection-only-drawer', 'three-map-presets', 'all-maps-remain-interactive', 'same-onsite-map-point', 'chaoyang-map-rendered', 'drawer-has-no-photo', 'worker-card-has-no-photo', 'detector-ready', 'reset-enables-next-round', 'dispatch-received', 'accepted', 'completed'] }, null, 2));
   } catch (error) {
     console.error(error.stack);
     if (errors.length) console.error(errors.join('\n'));
