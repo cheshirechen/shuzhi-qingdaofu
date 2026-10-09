@@ -694,7 +694,7 @@
             const reportBox = document.getElementById('ai-report-text');
             reportBox.innerHTML = '<span class="text-cyan-400">>> DeepSeek-R1 正在汇集全局北斗时空数据，开始研判...</span>';
             
-            const reportText = `【2026年试点验证态势综述】\n\n统计口径：\n截至2026年10月11日，数据来自校内测试及小范围企业合作验证，不代表城市级正式运营规模。\n\n总体态势：\n系统累计完成1,286公里测试，记录异常事件368件，完成闭环342件，闭环率92.9%。当前接入测试终端9台，其中6台保持活跃。\n\n事件分布：\n塑料包装物104件、纸板82件、纸张64件，三类合计约占68%；金属56件、玻璃36件、可降解垃圾26件。\n\nAI调度验证：\n198件事件进入自动闭环流程，其余事件经人工确认后完成处置。内部对比样本中，平均响应时间由18.4分钟缩短至8.6分钟，下降约53.3%。\n\n气象与作业建议：\n10月11日朝阳区预设为多云转阴、16—25℃、风力2级、无降水，适合开展现场即时处置。建议继续关注轻质垃圾二次飘移风险。\n\n后续建议：\n扩大测试点位，继续提升复杂光照、小目标和多目标条件下的识别稳定性，并保留人工确认机制。`;
+            const reportText = `【2026年试点验证态势综述】\n\n统计口径：\n截至2026年10月11日，数据来自校内外测试及小范围企业合作验证。\n\n总体态势：\n系统累计完成1,286公里测试，记录异常事件368件，完成闭环342件，闭环率92.9%。当前接入测试终端9台，其中6台保持活跃。\n\n事件分布：\n塑料包装物104件、纸板82件、纸张64件，三类合计约占68%；金属56件、玻璃36件、可降解垃圾26件。\n\nAI调度验证：\n198件事件进入自动闭环流程，其余事件经人工确认后完成处置。内部对比样本中，平均响应时间由18.4分钟缩短至8.6分钟，下降约53.3%。\n\n气象与作业建议：\n10月11日朝阳区为多云转阴、16—25℃、风力2级、无降水，适合开展现场即时处置。建议继续关注轻质垃圾二次飘移风险。\n\n后续建议：\n扩大测试点位，继续提升复杂光照、小目标和多目标条件下的识别稳定性，并保留人工确认机制。`;
             
             setTimeout(() => { typeWriter(reportText, reportBox, 20); }, 500);
         }
@@ -1164,6 +1164,7 @@
         let completedSeq = 0;
         let lastStageNote = '';
         let currentActiveEvents = [];
+        let drawerSelectedId = null;
 
         function demoStageLabel(stage) {
             return {
@@ -1199,6 +1200,7 @@
         function showEventDrawer(events, selectedId, stage) {
             const selected = events.find(event => event.id === selectedId) || events[0];
             if (!selected) return;
+            drawerSelectedId = selected.id;
             const tabs = document.getElementById('detail-event-tabs');
             tabs.innerHTML = '';
             tabs.classList.toggle('hidden', events.length < 2);
@@ -1254,14 +1256,14 @@
             start.className = 'mb-3';
             const events = activeEventsFor(room);
             const eventNames = events.map(event => event.title).join('、');
-            start.innerHTML = `<span class="text-red-400 font-bold">[边缘节点告警]</span> 国际文化交流中心检测到${eventNames}<br><span class="text-cyan-400 mt-1 inline-block font-tech">>> 【预设演示脚本】正在进行多维时空联合推演...</span>`;
+            start.innerHTML = `<span class="text-red-400 font-bold">[边缘节点告警]</span> 国际文化交流中心检测到${eventNames}<br><span class="text-cyan-400 mt-1 inline-block font-tech">>> 正在进行多维时空联合推演...</span>`;
             chatBox.appendChild(start);
             const reply = document.createElement('div');
             reply.className = 'border-l-2 border-cyan-500 pl-2 bg-blue-900/30 p-2 rounded text-cyan-50 text-xs leading-relaxed';
             chatBox.appendChild(reply);
             const eventLines = events.map(event => `· ${event.title}（${event.confidence}）：${event.analysis}`).join('\n');
             const actionLines = events.map(event => `· ${event.label}：${event.tools}；${event.action}。`).join('\n');
-            const text = `【预设演示脚本】\n【事件解析】\n${eventLines}\n【北斗校核】事件锚定北京工业大学平乐园校区国际文化交流中心，定位精度 1.6 m。\n【环境评估】10月11日多云转阴、风力2级、无降水，现场具备即时处置条件。\n【风险研判】风险等级：一般，无需临时交通管制。\n【资源匹配】推荐执行：环卫人员03；距事件点 1.1 m，现场即可处理。\n【作业建议】\n${actionLines}\n【调度结论】联合处置方案已生成，准备下发现场作业端。`;
+            const text = `【事件解析】\n${eventLines}\n【北斗校核】事件锚定北京工业大学平乐园校区国际文化交流中心，定位精度 1.6 m。\n【环境评估】10月11日多云转阴、风力2级、无降水，现场具备即时处置条件。\n【风险研判】风险等级：一般，无需临时交通管制。\n【资源匹配】推荐执行：环卫人员03；距事件点 1.1 m，现场即可处理。\n【作业建议】\n${actionLines}\n【调度结论】联合处置方案已生成，准备下发现场作业端。`;
             await typeWriter(text, reply, 22);
         }
 
@@ -1285,6 +1287,11 @@
 
             currentActiveEvents = activeEventsFor(room);
             syncDemoEvents(room);
+            const drawer = document.getElementById('event-detail-modal');
+            if (!drawer.classList.contains('translate-x-full')) {
+                const selected = currentActiveEvents.find(event => event.id === drawerSelectedId) || currentActiveEvents[0];
+                updateDemoDrawer(selected, demoStage);
+            }
             if (demoEventSeqRendered !== room.eventSeq) {
                 demoEventSeqRendered = room.eventSeq;
                 lastStageNote = '';
@@ -1295,7 +1302,7 @@
             }
 
             if (demoStage === 'analyzing') {
-                if (stageChanged) { closeDrawer('event-detail-modal'); switchMapMode('dispatch'); }
+                if (stageChanged) switchMapMode('dispatch');
                 runDemoAnalysis(room);
             } else if (demoStage === 'dispatched') {
                 if (stageChanged) switchMapMode('dispatch');

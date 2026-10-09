@@ -136,8 +136,11 @@ const fs = require('node:fs');
     assert.equal(await dashboard.locator('#event-detail-modal img').count(), 0, 'event drawer must not render an image');
     assert.equal(await dashboard.locator('#event-list [data-event-kind="live"]').count(), 1, 'only the detector signal may add a live event');
 
-    await dashboard.waitForFunction(() => document.querySelector('#event-detail-modal').classList.contains('translate-x-full'), null, { timeout: 5000 });
-    assert.match(await dashboard.locator('#ai-chat-box').innerText(), /预设演示脚本/);
+    await dashboard.waitForFunction(() => document.querySelector('#ai-chat-box')?.textContent.includes('【事件解析】'), null, { timeout: 10000 });
+    assert.equal(await dashboard.locator('#event-detail-modal').evaluate(node => node.classList.contains('translate-x-full')), false, 'analysis must keep the first-opened drawer visible');
+    assert.doesNotMatch(await dashboard.locator('#ai-chat-box').innerText(), /预设演示脚本/);
+    await dashboard.locator('#event-detail-modal button').first().click();
+    await dashboard.waitForFunction(() => document.querySelector('#event-detail-modal').classList.contains('translate-x-full'));
 
     await worker.getByText('新任务').waitFor({ timeout: 20000 });
     assert.equal(await worker.locator('.task-card img').count(), 0, 'worker task card must not render an image');
@@ -171,6 +174,11 @@ const fs = require('node:fs');
     await worker.getByText('正在等待新任务').waitFor({ timeout: 20000 });
     await detector.getByRole('button', { name: '手动发送当前识别结果' }).waitFor({ state: 'visible', timeout: 20000 });
     assert.equal(await dashboard.locator('#event-list [data-event-kind="live"]').count(), 0, 'reset must clear all live event rows');
+    await detector.getByRole('button', { name: '手动发送当前识别结果' }).click();
+    await dashboard.waitForFunction(() => document.querySelectorAll('#event-list [data-event-kind="live"]').length === 1, null, { timeout: 20000 });
+    await dashboard.waitForFunction(() => !document.querySelector('#event-detail-modal').classList.contains('translate-x-full'), null, { timeout: 20000 });
+    assert.equal(await dashboard.locator('#event-list [data-event-kind="live"]').count(), 1, 'a new detection after reset must create a fresh live event');
+    await dashboard.keyboard.press('r');
     console.log(JSON.stringify({ passed: true, checks: [expectCloud ? 'three-isolated-cloud-clients' : 'browser-local-relay', 'detector-to-dashboard-signal', 'cloud-status-hidden', 'static-historical-event-pool', 'accumulated-live-events-before-reset', 'new-detection-only-drawer', 'three-map-presets', 'all-maps-remain-interactive', 'same-onsite-map-point', 'chaoyang-map-rendered', 'drawer-has-no-photo', 'worker-card-has-no-photo', 'detector-ready', 'reset-enables-next-round', 'dispatch-received', 'accepted', 'completed'] }, null, 2));
   } catch (error) {
     console.error(error.stack);

@@ -40,6 +40,7 @@ function App() {
   const resultsRef = useRef([]), imageUrl = useRef(), startedAt = useRef(0), samples = useRef([]), actions = useRef({});
   const savedResults = useRef([]);
   const relayRef = useRef(), roomRef = useRef({ stage: 'idle', eventSeq: 0, events: [], activeEventIds: [] });
+  const wakeLockRef = useRef(null);
   const streakRef = useRef(0), clearFramesRef = useRef(0), sentRef = useRef(false), awaitingClearRef = useRef(false);
   const collectionRef = useRef(new Map()), collectionTimerRef = useRef(null);
   const [ready,setReady] = useState(false), [loading,setLoading] = useState(true), [progress,setProgress] = useState(0);
@@ -98,10 +99,30 @@ function App() {
     });
   }
 
+  function releaseWakeLock() {
+    const lock = wakeLockRef.current;
+    wakeLockRef.current = null;
+    lock?.release?.().catch(() => {});
+  }
+
+  async function acquireWakeLock() {
+    if (!navigator.wakeLock?.request || document.hidden || modeRef.current !== 'camera' || wakeLockRef.current) return;
+    try {
+      const lock = await navigator.wakeLock.request('screen');
+      wakeLockRef.current = lock;
+      lock.addEventListener('release', () => {
+        if (wakeLockRef.current === lock) wakeLockRef.current = null;
+      }, { once: true });
+    } catch {
+      // Wake Lock is an optional enhancement. Camera recognition still works without it.
+    }
+  }
+
   function stopCamera(message = '相机已停止') {
     generation.current++;
     clearTimeout(collectionTimerRef.current); collectionTimerRef.current = null; collectionRef.current.clear();
     stream.current?.getTracks().forEach(track => track.stop()); stream.current = null;
+    releaseWakeLock();
     if (video.current) video.current.srcObject = null;
     if (modeRef.current === 'camera') { modeRef.current = 'empty'; setMode('empty'); setBoxes([]); resultsRef.current = []; overlay.current?.getContext('2d').clearRect(0,0,overlay.current.width,overlay.current.height); }
     setStatus(message);
@@ -134,16 +155,15 @@ function App() {
     loadModel();
     fetch(`${baseUrl}samples/index.json`).then(r => r.ok ? r.json() : []).then(items => setSampleList(items.map(item => ({ ...item, url: assetUrl(item.url) })))).catch(()=>{});
     if ('serviceWorker' in navigator && import.meta.env.PROD) navigator.serviceWorker.register(`${baseUrl}sw.js`).catch(()=>setCacheStatus('离线缓存不可用，联网识别仍可使用'));
-    const visibility = () => {if (document.hidden && modeRef.current === 'camera') stopCamera('已暂停 · 回到页面后点击开启相机');};
+    const visibility = () => {if (!document.hidden && modeRef.current === 'camera') acquireWakeLock();};
     const network = () => setOffline(!navigator.onLine);
-    const pagehide = () => stopCamera('已暂停 · 点击开启相机继续');
-    document.addEventListener('visibilitychange', visibility); window.addEventListener('pagehide', pagehide);
+    document.addEventListener('visibilitychange', visibility);
     window.addEventListener('online',network);window.addEventListener('offline',network);
     return () => {
       stopCamera(); worker.current.terminate();
       for (const cb of callbacks.current.values()) {clearTimeout(cb.timeout); cb.reject(new Error('页面已关闭'));}
       callbacks.current.clear(); if(imageUrl.current) URL.revokeObjectURL(imageUrl.current);
-      document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',pagehide);window.removeEventListener('online',network);window.removeEventListener('offline',network);
+      document.removeEventListener('visibilitychange',visibility);window.removeEventListener('online',network);window.removeEventListener('offline',network);
     };
   }, []);
 
@@ -209,6 +229,10 @@ function App() {
 
   async function startCamera() {
     stopCamera();setError('');
+    if (['idle', 'completed'].includes(roomRef.current.stage)) {
+      sentRef.current = false; awaitingClearRef.current = false;
+      streakRef.current = 0; clearFramesRef.current = 0; collectionRef.current.clear(); setSent(false);
+    }
     if(!window.isSecureContext || !navigator.mediaDevices?.getUserMedia){setError('相机需要安全连接。请使用 HTTPS 地址，并在 Safari 中打开。');return;}
     const token=generation.current;
     try {
@@ -222,6 +246,7 @@ function App() {
       await video.current.play();
       if(token!==generation.current){acquired.getTracks().forEach(t=>t.stop());return;}
       modeRef.current='camera';setMode('camera');setPhotoSource('');setBoxes([]);resultsRef.current=[];startedAt.current=Date.now();
+      await acquireWakeLock();
       const tick=async()=>{
         if(token!==generation.current || !stream.current)return;
         try {

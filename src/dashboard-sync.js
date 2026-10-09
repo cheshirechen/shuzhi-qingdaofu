@@ -76,7 +76,13 @@ async function command(name) {
   if (name === 'reset') {
     clearTimers();
     scheduledSeq = 0;
-    await relay.update({ ...freshRoom(session) }, 'dashboard');
+    const resetRoom = freshRoom(session);
+    await relay.update({
+      ...resetRoom,
+      eventSeq: Number(currentRoom.eventSeq) || 0,
+      recordSeq: Number(currentRoom.recordSeq) || 0,
+      resetAt: Date.now(),
+    }, 'dashboard');
   }
 }
 
